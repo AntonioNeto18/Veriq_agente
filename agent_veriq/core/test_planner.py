@@ -16,7 +16,7 @@ from typing import Any
 from .endpoint_analyzer import get_operation
 from .models import ApiSpec, MediaType, Operation, Parameter
 from .ref_resolver import RefResolver
-from .schema_utils import DOCUMENTED, ExampleBuilder, normalized_type
+from .schema_utils import DOCUMENTED, ExampleBuilder, normalized_type, object_view
 from .security_analyzer import AuthStatus, analyze_operation_security
 
 DEFAULT_MAX_SCENARIOS = 40
@@ -239,7 +239,7 @@ class _OperationPlanner:
             self._add("missing_required", "Enviar a requisição sem body.", {"use": "valid_request", "body": None},
                       expected, basis, body.pointer, notes)
         schema = self.resolver.inline(self.media.schema) if self.media.schema else {}
-        properties, required = _object_view(schema)
+        properties, required = object_view(schema)
         for name in required:
             self._add("missing_required", f"Body sem o campo obrigatório '{name}'.",
                       {"use": "valid_request", "body_remove": name}, expected, basis, body.pointer, notes)
@@ -293,20 +293,6 @@ def _primary_media(operation: Operation) -> MediaType | None:
         if "json" in media.content_type:
             return media
     return body.content[0]
-
-
-def _object_view(schema: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
-    """Propriedades e obrigatórios do nível superior, mesclando `allOf`."""
-    properties: dict[str, Any] = {}
-    required: list[str] = []
-    parts = [schema] + [part for part in schema.get("allOf", []) if isinstance(part, dict)]
-    for part in parts:
-        if isinstance(part.get("properties"), dict):
-            properties.update(part["properties"])
-        for name in part.get("required", []) if isinstance(part.get("required"), list) else []:
-            if name not in required:
-                required.append(name)
-    return properties, required
 
 
 def _invalid_values(schema: dict[str, Any]) -> list[tuple[str, str, Any]]:

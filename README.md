@@ -5,8 +5,22 @@ identifica autenticação declarada, planeja testes e gera collections Postman v
 **O agente não executa requisições HTTP** — apenas analisa o contrato e gera artefatos.
 
 > Projeto em desenvolvimento. Concluído: Fase 0 (fundação), Fase 1 (carregamento e parsing) e
-> Fase 2 (análise de segurança declarada, listagem e detalhamento de endpoints) e Fase 3
-> (planejamento de testes).
+> Fase 2 (análise de segurança declarada, listagem e detalhamento de endpoints), Fase 3
+> (planejamento de testes) e Fase 4 (geração de collection Postman).
+
+## Collection Postman v2.1.0
+
+- Validada contra o schema oficial versionado em
+  `agent_veriq/schemas/postman-collection-v2.1.0.schema.json` (sem acesso à rede) antes de ser entregue.
+- Escopo por operationId/`METHOD /path`, tag, método, status de autenticação ou texto.
+- Pastas por tag (ou primeiro segmento do path); variável `{{baseUrl}}` a partir do primeiro servidor.
+- Autenticação mapeada do esquema declarado (Bearer, Basic, Digest, API key em header/query/cookie,
+  OAuth 2.0/OpenID Connect). **Credenciais são sempre variáveis vazias** — nunca valores reais.
+- Asserções apenas para o que está documentado: status 2xx, Content-Type e campos obrigatórios do
+  schema de resposta. Sem 2xx documentado, nenhuma asserção de status é criada.
+- Opcional: pasta de cenários por operação (a partir do planejamento de testes). Cenários
+  `hypothesis` usam `pm.test.skip`, sem asserção.
+- As requisições nunca são executadas pelo agente.
 
 ## Planejamento de testes
 

@@ -67,6 +67,20 @@ def normalized_type(schema: dict[str, Any]) -> tuple[str | list[str] | None, boo
     return (str(raw) if raw is not None else None), nullable
 
 
+def object_view(schema: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """Propriedades e obrigatórios do nível superior de um schema já expandido, mesclando `allOf`."""
+    properties: dict[str, Any] = {}
+    required: list[str] = []
+    parts = [schema] + [part for part in schema.get("allOf", []) if isinstance(part, dict)]
+    for part in parts:
+        if isinstance(part.get("properties"), dict):
+            properties.update(part["properties"])
+        for name in part.get("required", []) if isinstance(part.get("required"), list) else []:
+            if name not in required:
+                required.append(name)
+    return properties, required
+
+
 class SchemaSummarizer:
     def __init__(self, resolver: RefResolver, *, max_depth: int = 4, max_properties: int = 40) -> None:
         self.resolver = resolver

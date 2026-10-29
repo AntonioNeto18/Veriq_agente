@@ -29,21 +29,33 @@ def list_endpoints(
     text: str | None = None,
 ) -> list[dict[str, Any]]:
     """Lista operações com campos mínimos, aplicando filtros opcionais."""
+    selected = filter_operations(spec, tag=tag, method=method, auth_status=auth_status, text=text)
+    return [_endpoint_row(operation, analyze_operation_security(spec, operation).status) for operation in selected]
+
+
+def filter_operations(
+    spec: ApiSpec,
+    *,
+    tag: str | None = None,
+    method: str | None = None,
+    auth_status: str | None = None,
+    text: str | None = None,
+) -> list[Operation]:
+    """Operações que atendem a todos os filtros informados (AND)."""
     wanted_status = AuthStatus(auth_status) if auth_status else None
     needle = text.lower() if text else None
-    rows = []
+    selected = []
     for operation in spec.operations:
         if tag and tag.lower() not in (item.lower() for item in operation.tags):
             continue
         if method and operation.method != method.lower():
             continue
-        status = analyze_operation_security(spec, operation).status
-        if wanted_status and status is not wanted_status:
+        if wanted_status and analyze_operation_security(spec, operation).status is not wanted_status:
             continue
         if needle and needle not in _searchable_text(operation):
             continue
-        rows.append(_endpoint_row(operation, status))
-    return rows
+        selected.append(operation)
+    return selected
 
 
 def get_operation(spec: ApiSpec, identifier: str) -> Operation:
