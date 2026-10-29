@@ -4,9 +4,50 @@ Agente de IA (Google ADK) que analisa especificações OpenAPI (JSON/YAML), expl
 identifica autenticação declarada, planeja testes e gera collections Postman v2.1.0.
 **O agente não executa requisições HTTP** — apenas analisa o contrato e gera artefatos.
 
-> Projeto em desenvolvimento. Concluído: Fase 0 (fundação), Fase 1 (carregamento e parsing) e
-> Fase 2 (análise de segurança declarada, listagem e detalhamento de endpoints), Fase 3
-> (planejamento de testes) e Fase 4 (geração de collection Postman).
+> Projeto em desenvolvimento. Concluído: fases 0 a 7 (núcleo de análise, planejamento de testes,
+> collection Postman, ferramentas, Skills e agente ADK).
+
+## Execução
+
+Com o `.env` preenchido (na raiz do projeto; o ADK o procura subindo a partir de `agent_veriq/`):
+
+```bash
+.venv/Scripts/adk.exe run agent_veriq    # terminal
+.venv/Scripts/adk.exe web                # interface web (selecione "agent_veriq")
+```
+
+Exemplos de pedidos:
+- "Carregue o arquivo specs/minha-api.yaml e liste todos os endpoints."
+- "Quais endpoints exigem autenticação?" / "Quais informações de autenticação estão faltando?"
+- "Explique como usar o endpoint de cadastro de usuários."
+- "Quais testes positivos e negativos posso fazer em POST /users?"
+- "Gere uma collection Postman apenas com os endpoints públicos."
+
+Somente arquivos dentro de `VERIQ_SPEC_DIR` podem ser carregados; collections são gravadas em
+`VERIQ_OUTPUT_DIR`.
+
+## Variáveis de ambiente
+
+| Variável | Padrão | Uso |
+|---|---|---|
+| `GOOGLE_API_KEY` | — | Chave do Gemini (obrigatória para executar o agente; não para os testes) |
+| `GOOGLE_GENAI_USE_VERTEXAI` | `FALSE` | Usar Vertex AI em vez da API Gemini |
+| `VERIQ_MODEL` | padrão do ADK (`gemini-3.5-flash`) | Modelo do agente |
+| `VERIQ_SPEC_DIR` | diretório atual | Único diretório de onde especificações podem ser lidas |
+| `VERIQ_OUTPUT_DIR` | `./output` | Destino das collections |
+| `VERIQ_MAX_SPEC_MB` | `10` | Tamanho máximo do arquivo OpenAPI |
+
+## Ferramentas e Skills
+
+Ferramentas (FunctionTools, retornam `dict` com `status`): `carregar_especificacao`,
+`resumo_especificacao`, `listar_problemas_especificacao`, `listar_schemas`, `obter_schema`,
+`listar_referencias`, `listar_endpoints`, `obter_detalhes_endpoint`, `analisar_autenticacao`,
+`listar_lacunas_autenticacao`, `planejar_testes_endpoint`, `planejar_testes_conjunto`,
+`gerar_postman_collection`.
+
+Skills (carregadas sob demanda via `SkillToolset`): `openapi-analysis`, `endpoint-explanation`,
+`api-test-planning`, `postman-collection`. Apenas `list_skills`, `load_skill` e
+`load_skill_resource` são expostas; `run_skill_script` é bloqueada por `tool_filter`.
 
 ## Collection Postman v2.1.0
 
@@ -93,10 +134,12 @@ tests/           # testes unitários e fixtures
   com o nome da pasta, em kebab-case; recursos lidos de `references/`, `assets/` e `scripts/`).
 - Exposição via `google.adk.tools.skill_toolset.SkillToolset` (modo `LAZY`: `list_skills`,
   `load_skill`, `load_skill_resource`). A ferramenta `run_skill_script` também é registrada pelo
-  toolset e será removida via `tool_filter`, pois o projeto não executa scripts.
+  toolset e é removida via `tool_filter`, pois o projeto não executa scripts.
 
 ## Limitações atuais
 
+- O fluxo completo com o modelo (`adk run`) depende de `GOOGLE_API_KEY`; os testes automatizados
+  cobrem as ferramentas e a montagem do agente, mas não chamam o modelo.
 - Referências externas não são resolvidas.
 - Em OpenAPI 3.1, `$ref` com campos irmãos é mesclado apenas na expansão de schemas.
 - O agente identifica o que está **declarado** no contrato; não comprova o comportamento do servidor.
