@@ -5,7 +5,19 @@ identifica autenticação declarada, planeja testes e gera collections Postman v
 **O agente não executa requisições HTTP** — apenas analisa o contrato e gera artefatos.
 
 > Projeto em desenvolvimento. Concluído: Fase 0 (fundação), Fase 1 (carregamento e parsing) e
-> Fase 2 (análise de segurança declarada, listagem e detalhamento de endpoints).
+> Fase 2 (análise de segurança declarada, listagem e detalhamento de endpoints) e Fase 3
+> (planejamento de testes).
+
+## Planejamento de testes
+
+Cada cenário tem `id`, `category`, `description`, `inputs`, `expected` e `basis`:
+
+- `documented`: a restrição (ex.: campo obrigatório, `maxLength`) e o status esperado constam no
+  contrato; a associação entre eles é inferida.
+- `hypothesis`: o status esperado não está documentado (ex.: 415 para content type não aceito).
+
+Os cenários são derivados apenas do contrato (obrigatoriedade, tipos, formatos, limites, enums,
+content types, segurança declarada e respostas documentadas) e **nunca são executados**.
 
 ## Classificação de autenticação
 
