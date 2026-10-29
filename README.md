@@ -4,7 +4,18 @@ Agente de IA (Google ADK) que analisa especificações OpenAPI (JSON/YAML), expl
 identifica autenticação declarada, planeja testes e gera collections Postman v2.1.0.
 **O agente não executa requisições HTTP** — apenas analisa o contrato e gera artefatos.
 
-> Projeto em desenvolvimento. Concluído: Fase 0 (fundação) e Fase 1 (carregamento e parsing).
+> Projeto em desenvolvimento. Concluído: Fase 0 (fundação), Fase 1 (carregamento e parsing) e
+> Fase 2 (análise de segurança declarada, listagem e detalhamento de endpoints).
+
+## Classificação de autenticação
+
+| Status | Significado |
+|---|---|
+| `declared_required` | A operação possui requisitos de segurança aplicáveis na especificação |
+| `none_declared` | Sem requisitos aplicáveis (inclui `security: []` e autenticação opcional `{}`, sinalizada em `optional`) |
+| `indeterminate` | `security` inválido, esquema não definido, tipo desconhecido ou API key incompleta |
+
+O status reflete apenas o contrato; não comprova o comportamento real do servidor.
 
 ## Instalação
 

@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: Security Mixed
+  version: 1.0.0
+servers:
+  - url: https://secure.example.com
+security:
+  - bearer: []
+paths:
+  /public:
+    get:
+      operationId: publicOp
+      security: []
+      responses:
+        '200': {description: ok}
+  /inherited:
+    get:
+      operationId: inheritedOp
+      responses:
+        '200': {description: ok}
+        '401': {description: sem token}
+  /alternatives:
+    get:
+      operationId: alternativesOp
+      security:
+        - apiKeyHeader: []
+        - oauth: [read]
+      responses:
+        '200': {description: ok}
+  /combined:
+    get:
+      operationId: combinedOp
+      security:
+        - apiKeyHeader: []
+          apiKeyQuery: []
+      responses:
+        '200': {description: ok}
+  /optional:
+    get:
+      operationId: optionalOp
+      security:
+        - {}
+        - bearer: []
+      responses:
+        '200': {description: ok}
+  /unknown:
+    get:
+      operationId: unknownOp
+      security:
+        - ghost: []
+      responses:
+        '200': {description: ok}
+  /weird:
+    get:
+      operationId: weirdOp
+      security:
+        - weird: []
+      responses:
+        '200': {description: ok}
+  /invalid:
+    get:
+      operationId: invalidOp
+      security: bearer
+      responses:
+        '200': {description: ok}
+  /oidc:
+    get:
+      operationId: oidcOp
+      security:
+        - oidc: [openid]
+      responses:
+        '200': {description: ok}
+  /cookie:
+    get:
+      operationId: cookieOp
+      security:
+        - apiKeyCookie: []
+      responses:
+        '200': {description: ok}
+  /basic:
+    get:
+      operationId: basicOp
+      security:
+        - basic: []
+      responses:
+        '200': {description: ok}
+  /admin:
+    get:
+      operationId: adminOp
+      security:
+        - oauth: [admin]
+      responses:
+        '200': {description: ok}
+  /broken-key:
+    get:
+      operationId: brokenKeyOp
+      security:
+        - brokenKey: []
+      responses:
+        '200': {description: ok}
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    basic:
+      type: http
+      scheme: basic
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    apiKeyQuery:
+      type: apiKey
+      in: query
+      name: api_key
+    apiKeyCookie:
+      type: apiKey
+      in: cookie
+      name: session
+    oauth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/authorize
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            read: leitura
+    oidc:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    weird:
+      type: customToken
+    brokenKey:
+      type: apiKey
+      in: header
+    unused:
+      type: http
+      scheme: digest
