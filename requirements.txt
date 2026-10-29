@@ -1,0 +1,4 @@
+# Dependências de execução do agente (versões validadas no desenvolvimento).
+google-adk==2.13.0    # orquestração do agente, FunctionTools e SkillToolset
+PyYAML==6.0.3         # parsing seguro (safe_load) de especificações YAML
+jsonschema==4.26.0    # validação local da collection Postman v2.1.0

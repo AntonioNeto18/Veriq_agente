@@ -1,0 +1,33 @@
+openapi: 3.0.1
+info:
+  title: Incompleta
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      security:
+        - missingScheme: []
+      responses:
+        '200':
+          description: Pedido
+          content:
+            application/json:
+              schema:
+                $ref: 'common.yaml#/components/schemas/Order'
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoesNotExist'
+  /broken:
+    get: "não é um objeto"
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/Node'

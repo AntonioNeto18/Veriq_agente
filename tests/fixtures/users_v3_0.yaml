@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info:
+  title: Users API
+  version: 1.2.0
+  description: API de exemplo para cadastro de usuários.
+servers:
+  - url: https://api.example.com/v1
+    description: Produção
+tags:
+  - name: users
+  - name: health
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Verifica a saúde do serviço
+      security: []
+      responses:
+        200:
+          description: Serviço disponível
+  /users:
+    get:
+      tags: [users]
+      operationId: listUsers
+      summary: Lista usuários
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: X-Request-Id
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [users]
+      operationId: createUser
+      summary: Cadastra um usuário
+      requestBody:
+        $ref: '#/components/requestBodies/NewUser'
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 10
+                name: Ana
+                email: ana@example.com
+        '400':
+          description: Dados inválidos
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [users]
+      operationId: getUser
+      responses:
+        '200':
+          description: Usuário encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Não encontrado
+    delete:
+      tags: [users]
+      operationId: deleteUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: Sobrescreve o parâmetro do path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Removido
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBodies:
+    NewUser:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewUser'
+  responses:
+    Unauthorized:
+      description: Token ausente ou inválido
+  schemas:
+    NewUser:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          format: email
+        address:
+          $ref: '#/components/schemas/Address'
+    User:
+      allOf:
+        - $ref: '#/components/schemas/NewUser'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: integer
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string

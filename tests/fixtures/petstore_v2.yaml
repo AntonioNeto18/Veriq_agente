@@ -1,0 +1,94 @@
+swagger: "2.0"
+info:
+  title: Petstore
+  version: 1.0.0
+host: petstore.example.com
+basePath: /api
+schemes: [https]
+consumes: [application/json]
+produces: [application/json]
+securityDefinitions:
+  basicAuth:
+    type: basic
+  apiKey:
+    type: apiKey
+    in: query
+    name: api_key
+  petOauth:
+    type: oauth2
+    flow: accessCode
+    authorizationUrl: https://auth.example.com/authorize
+    tokenUrl: https://auth.example.com/token
+    scopes:
+      write:pets: altera pets
+security:
+  - apiKey: []
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          maximum: 50
+      responses:
+        200:
+          description: Lista de pets
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Pet'
+          examples:
+            application/json:
+              - id: 1
+                name: Rex
+    post:
+      operationId: createPet
+      tags: [pets]
+      security:
+        - petOauth: [write:pets]
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Pet'
+      responses:
+        201:
+          description: Criado
+  /pets/{petId}/photo:
+    post:
+      operationId: uploadPhoto
+      tags: [pets]
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: '#/parameters/PetId'
+        - name: file
+          in: formData
+          type: file
+          required: true
+        - name: caption
+          in: formData
+          type: string
+      responses:
+        200:
+          description: Foto enviada
+parameters:
+  PetId:
+    name: petId
+    in: path
+    required: true
+    type: integer
+    format: int64
+definitions:
+  Pet:
+    type: object
+    required: [name]
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
