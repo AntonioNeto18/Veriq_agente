@@ -4,9 +4,6 @@ Agente de IA (Google ADK) que analisa especificações OpenAPI (JSON/YAML), expl
 identifica autenticação declarada, planeja testes e gera collections Postman v2.1.0.
 **O agente não executa requisições HTTP** — apenas analisa o contrato e gera artefatos.
 
-> Projeto em desenvolvimento. Concluído: fases 0 a 7 (núcleo de análise, planejamento de testes,
-> collection Postman, ferramentas, Skills e agente ADK).
-
 ## Execução
 
 Com o `.env` preenchido (na raiz do projeto; o ADK o procura subindo a partir de `agent_veriq/`):
@@ -105,6 +102,8 @@ Os testes são totalmente offline e usam fixtures locais em `tests/fixtures/`.
 
 ```text
 agent_veriq/
+├── config.py    # constantes de configuração e leitura das variáveis de ambiente
+├── agent.py     # root_agent (Google ADK)
 ├── core/        # lógica determinística (loader, parser, $ref, modelos, store)
 ├── tools/       # funções expostas ao agente (FunctionTools do ADK)
 ├── skills/      # Skills (SKILL.md + references/) carregadas sob demanda
