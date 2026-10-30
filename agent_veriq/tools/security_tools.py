@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..config import TOOL_DEFAULT_GAPS_LIMIT, TOOL_DEFAULT_LIST_LIMIT
 from ..core.endpoint_analyzer import get_operation
 from ..core.security_analyzer import (
     DISCLAIMER,
@@ -15,7 +16,7 @@ from ..core.security_analyzer import (
 from ._common import active_spec, limit_items, run_tool
 
 
-def analisar_autenticacao(operacao: str | None = None, limite: int = 100) -> dict[str, Any]:
+def analisar_autenticacao(operacao: str | None = None, limite: int = TOOL_DEFAULT_LIST_LIMIT) -> dict[str, Any]:
     """Analisa os requisitos de autenticação DECLARADOS (não verifica o servidor real).
 
     Args:
@@ -33,7 +34,7 @@ def analisar_autenticacao(operacao: str | None = None, limite: int = 100) -> dic
     return run_tool(action)
 
 
-def listar_lacunas_autenticacao(limite: int = 50) -> dict[str, Any]:
+def listar_lacunas_autenticacao(limite: int = TOOL_DEFAULT_GAPS_LIMIT) -> dict[str, Any]:
     """Lista informações de autenticação ausentes, inconsistentes ou não interpretáveis na especificação."""
     def action() -> dict[str, Any]:
         gaps = [gap.to_dict() for gap in find_security_gaps(active_spec())]

@@ -10,22 +10,19 @@ from __future__ import annotations
 import json
 import re
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft4Validator
 
-SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schemas" / "postman-collection-v2.1.0.schema.json"
+from ..config import INVALID_CREDENTIAL, MAX_REPORTED_VALIDATION_ERRORS, POSTMAN_SCHEMA_PATH
+
 _VARIABLE = re.compile(r"^\{\{[A-Za-z0-9_.-]+\}\}$")
 _CREDENTIAL_KEYS = {"token", "password", "value", "accessToken", "clientSecret"}
-_MAX_REPORTED_ERRORS = 20
-# Valor fictício usado apenas em cenários de "credencial inválida"; não é um segredo.
-INVALID_CREDENTIAL = "invalid-credential"
 
 
 @lru_cache(maxsize=1)
 def _validator() -> Draft4Validator:
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    schema = json.loads(POSTMAN_SCHEMA_PATH.read_text(encoding="utf-8"))
     return Draft4Validator(schema)
 
 
@@ -38,7 +35,7 @@ def validate_collection(collection: dict[str, Any]) -> list[str]:
     errors = [
         f"{'/'.join(str(part) for part in error.absolute_path) or '<raiz>'}: {error.message}"
         for error in sorted(_validator().iter_errors(collection), key=lambda item: list(item.absolute_path))
-    ][:_MAX_REPORTED_ERRORS]
+    ][:MAX_REPORTED_VALIDATION_ERRORS]
     errors.extend(_credential_problems(collection))
     return errors
 

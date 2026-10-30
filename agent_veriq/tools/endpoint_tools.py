@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..config import TOOL_DEFAULT_LIST_LIMIT
 from ..core.endpoint_analyzer import list_endpoints, operation_details
 from ._common import active_spec, limit_items, run_tool
 
@@ -13,7 +14,7 @@ def listar_endpoints(
     metodo: str | None = None,
     autenticacao: str | None = None,
     texto: str | None = None,
-    limite: int = 100,
+    limite: int = TOOL_DEFAULT_LIST_LIMIT,
 ) -> dict[str, Any]:
     """Lista endpoints da especificação ativa com campos mínimos (método, path, operationId, resumo, tags, auth).
 

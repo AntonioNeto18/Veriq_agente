@@ -15,16 +15,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ..config import (
+    BASE_URL_VARIABLE,
+    COLLECTION_PREVIEW_REQUESTS,
+    DEFAULT_MAX_SCENARIOS_PER_OPERATION,
+    INVALID_CREDENTIAL,
+    POSTMAN_SCHEMA_URL,
+)
 from .endpoint_analyzer import filter_operations, get_operation
 from .models import ApiSpec, Operation, Parameter, Response, SecurityScheme
-from .postman_validator import INVALID_CREDENTIAL, validate_collection
+from .postman_validator import validate_collection
 from .ref_resolver import RefResolver
 from .schema_utils import SUGGESTED, ExampleBuilder, object_view
 from .security_analyzer import AuthStatus, OperationSecurity, analyze_operation_security
 from .test_planner import plan_operation_tests
 
-SCHEMA_URL = "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-BASE_URL_VARIABLE = "baseUrl"
 _IGNORED_HEADER_PARAMETERS = {"accept", "content-type", "authorization"}
 _OAUTH_GRANT_TYPES = {
     "authorizationCode": "authorization_code",
@@ -46,7 +51,7 @@ class CollectionOptions:
     name: str | None = None
     include_tests: bool = True
     include_scenarios: bool = False
-    max_scenarios_per_operation: int = 15
+    max_scenarios_per_operation: int = DEFAULT_MAX_SCENARIOS_PER_OPERATION
 
 
 @dataclass
@@ -114,7 +119,7 @@ def collection_summary(collection: dict[str, Any]) -> dict[str, Any]:
         "requests": len(requests),
         "folders": [item["name"] for item in collection["item"]],
         "variables": [variable["key"] for variable in collection.get("variable", [])],
-        "requests_preview": [name for name, _ in requests[:20]],
+        "requests_preview": [name for name, _ in requests[:COLLECTION_PREVIEW_REQUESTS]],
     }
 
 
@@ -179,7 +184,7 @@ class _CollectionBuilder:
                 "_postman_id": str(uuid.uuid4()),
                 "name": self.options.name or self.spec.title or "API",
                 "description": self._collection_description(),
-                "schema": SCHEMA_URL,
+                "schema": POSTMAN_SCHEMA_URL,
             },
             "item": [{"name": name, "item": items} for name, items in folders.items()],
         }

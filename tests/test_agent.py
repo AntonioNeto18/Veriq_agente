@@ -6,7 +6,8 @@ from google.adk.skills import load_skill_from_dir
 from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.skill_toolset import SkillToolset
 
-from agent_veriq.agent import SKILL_NAMES, SKILLS_DIR, build_agent, build_skill_toolset
+from agent_veriq.agent import build_agent, build_skill_toolset
+from agent_veriq.config import SKILL_NAMES, SKILLS_DIR
 from agent_veriq.tools import ALL_TOOLS
 
 

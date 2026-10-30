@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..config import MAX_PLANNED_OPERATIONS, TOOL_DEFAULT_SCENARIOS, TOOL_DEFAULT_SCENARIOS_PER_OPERATION
 from ..core.endpoint_analyzer import filter_operations
 from ..core.test_planner import plan_operation_tests, plan_tests_for_operations
 from ._common import active_spec, run_tool
 
-_MAX_OPERATIONS = 10
 
-
-def planejar_testes_endpoint(operacao: str, max_cenarios: int = 25) -> dict[str, Any]:
+def planejar_testes_endpoint(operacao: str, max_cenarios: int = TOOL_DEFAULT_SCENARIOS) -> dict[str, Any]:
     """Planeja cenários de teste para uma operação a partir do contrato documentado.
 
     Args:
@@ -24,9 +23,9 @@ def planejar_testes_endpoint(operacao: str, max_cenarios: int = 25) -> dict[str,
 def planejar_testes_conjunto(
     operacoes: list[str] | None = None,
     tag: str | None = None,
-    max_cenarios_por_operacao: int = 10,
+    max_cenarios_por_operacao: int = TOOL_DEFAULT_SCENARIOS_PER_OPERATION,
 ) -> dict[str, Any]:
-    """Planeja testes para várias operações (até 10), escolhidas pela lista ou por tag.
+    """Planeja testes para várias operações (há um limite de operações por chamada), escolhidas pela lista ou por tag.
 
     Args:
         operacoes: Lista de operationIds ou "METHOD /path".
@@ -38,7 +37,7 @@ def planejar_testes_conjunto(
         identifiers = operacoes or [op.key for op in filter_operations(spec, tag=tag)]
         if not identifiers:
             raise ValueError("Informe operações ou uma tag com operações.")
-        selected = identifiers[:_MAX_OPERATIONS]
+        selected = identifiers[:MAX_PLANNED_OPERATIONS]
         result: dict[str, Any] = {
             "plans": plan_tests_for_operations(spec, selected, max_scenarios_per_operation=max(1, max_cenarios_por_operacao))
         }

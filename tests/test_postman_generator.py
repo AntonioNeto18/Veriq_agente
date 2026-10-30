@@ -2,17 +2,18 @@ import json
 
 import pytest
 
+from agent_veriq.config import INVALID_CREDENTIAL
+from agent_veriq.config import POSTMAN_SCHEMA_URL as SCHEMA_URL
 from agent_veriq.core.openapi_loader import load_spec_text
 from agent_veriq.core.openapi_parser import parse_spec
 from agent_veriq.core.postman_generator import (
-    SCHEMA_URL,
     CollectionGenerationError,
     CollectionOptions,
     collection_summary,
     generate_collection,
     write_collection,
 )
-from agent_veriq.core.postman_validator import INVALID_CREDENTIAL, validate_collection
+from agent_veriq.core.postman_validator import validate_collection
 
 ALL_FIXTURES = ("users_v3_0.yaml", "users_v3_1.json", "petstore_v2.yaml", "security_mixed.yaml", "incomplete.yaml")
 

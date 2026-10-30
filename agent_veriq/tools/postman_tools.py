@@ -5,10 +5,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from ..config import MAX_INLINE_COLLECTION_CHARS, output_dir
 from ..core.postman_generator import CollectionOptions, collection_summary, generate_collection, write_collection
-from ._common import active_spec, output_dir, run_tool
-
-_MAX_INLINE_JSON = 60_000
+from ._common import active_spec, run_tool
 
 
 def gerar_postman_collection(
@@ -45,7 +44,7 @@ def gerar_postman_collection(
             result["file"] = str(write_collection(collection, output_dir(), nome))
         if retornar_json:
             text = json.dumps(collection, ensure_ascii=False)
-            if len(text) > _MAX_INLINE_JSON:
+            if len(text) > MAX_INLINE_COLLECTION_CHARS:
                 hint = "use o arquivo salvo." if salvar_arquivo else "gere novamente com salvar_arquivo=true."
                 result["json_omitted"] = f"Collection com {len(text)} caracteres excede o limite para resposta; {hint}"
             else:

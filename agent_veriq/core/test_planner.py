@@ -13,13 +13,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from ..config import DEFAULT_MAX_SCENARIOS, DEFAULT_MAX_SCENARIOS_PER_OPERATION, MAX_INLINE_TEST_VALUE_SIZE
 from .endpoint_analyzer import get_operation
 from .models import ApiSpec, MediaType, Operation, Parameter
 from .ref_resolver import RefResolver
 from .schema_utils import DOCUMENTED, ExampleBuilder, normalized_type, object_view
 from .security_analyzer import AuthStatus, analyze_operation_security
 
-DEFAULT_MAX_SCENARIOS = 40
 _VALIDATION_STATUSES = ("400", "422", "4XX")
 _INVALID_FORMATS = {
     "email": "email-invalido",
@@ -40,7 +40,6 @@ _WRONG_TYPE_VALUES = {
     "object": "nao-e-objeto",
 }
 _UNSUPPORTED_CONTENT_TYPE = "text/plain"
-_MAX_INLINE_SIZE = 50
 _NOTE_NOT_EXECUTED = "Cenários planejados a partir do contrato; nenhum foi executado."
 _NOTE_BASIS = ("basis=documented: a restrição e o status esperado constam no contrato, mas a associação entre "
                "eles é inferida; basis=hypothesis: o status esperado não está documentado.")
@@ -98,7 +97,7 @@ def plan_operation_tests(spec: ApiSpec, identifier: str, *, max_scenarios: int =
 
 
 def plan_tests_for_operations(
-    spec: ApiSpec, identifiers: list[str], *, max_scenarios_per_operation: int = 15
+    spec: ApiSpec, identifiers: list[str], *, max_scenarios_per_operation: int = DEFAULT_MAX_SCENARIOS_PER_OPERATION
 ) -> list[dict[str, Any]]:
     return [plan_operation_tests(spec, identifier, max_scenarios=max_scenarios_per_operation)
             for identifier in identifiers]
@@ -338,7 +337,7 @@ def _length_bounds(schema: dict[str, Any]) -> list[tuple[str, str, Any]]:
             cases.append(("length", f"lista com menos de {schema['minItems']} itens", []))
         if isinstance(schema.get("maxItems"), int):
             size = schema["maxItems"] + 1
-            value = [f"<item {index}>" for index in range(size)] if size <= _MAX_INLINE_SIZE else \
+            value = [f"<item {index}>" for index in range(size)] if size <= MAX_INLINE_TEST_VALUE_SIZE else \
                 f"<lista com {size} itens>"
             cases.append(("length", f"lista com mais de {schema['maxItems']} itens", value))
         return cases
@@ -353,7 +352,7 @@ def _length_bounds(schema: dict[str, Any]) -> list[tuple[str, str, Any]]:
 
 def _text_of_length(size: int) -> str:
     """Texto literal quando curto; placeholder descritivo quando longo (economiza tokens)."""
-    return "x" * size if size <= _MAX_INLINE_SIZE else f"<texto com {size} caracteres>"
+    return "x" * size if size <= MAX_INLINE_TEST_VALUE_SIZE else f"<texto com {size} caracteres>"
 
 
 def _is_number(value: Any) -> bool:

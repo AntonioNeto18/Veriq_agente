@@ -11,9 +11,9 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import unquote
 
+from ..config import MAX_REF_HOPS, REF_INLINE_MAX_DEPTH
 from .models import Reference
 
-MAX_REF_HOPS = 32
 CIRCULAR_MARKER = "x-veriq-circular"
 UNRESOLVED_MARKER = "x-veriq-unresolved"
 
@@ -87,7 +87,7 @@ class RefResolver:
             current = self.resolve_pointer(current_pointer)
         return Resolved(current, current_pointer, tuple(chain))
 
-    def inline(self, node: Any, max_depth: int = 12) -> Any:
+    def inline(self, node: Any, max_depth: int = REF_INLINE_MAX_DEPTH) -> Any:
         """Expande `$ref` internos de um schema, cortando ciclos e profundidade excessiva.
 
         Ciclos são substituídos por `{"$ref": ..., "x-veriq-circular": true}` e

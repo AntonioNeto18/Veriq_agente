@@ -8,12 +8,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..config import MAX_DOCUMENTED_EXAMPLES_CHARS, MAX_EXAMPLES_PER_MEDIA, SCHEMA_SUMMARY_MAX_DEPTH
 from .models import ApiSpec, MediaType, Operation, Parameter, RequestBody, Response, Severity
 from .ref_resolver import RefResolver
 from .schema_utils import SchemaSummarizer, compact_value
 from .security_analyzer import AuthStatus, analyze_operation_security
-
-_MAX_EXAMPLES_PER_MEDIA = 2
 
 
 class OperationNotFoundError(LookupError):
@@ -67,7 +66,8 @@ def get_operation(spec: ApiSpec, identifier: str) -> Operation:
     return operation
 
 
-def operation_details(spec: ApiSpec, identifier: str, *, max_schema_depth: int = 4) -> dict[str, Any]:
+def operation_details(spec: ApiSpec, identifier: str, *,
+                      max_schema_depth: int = SCHEMA_SUMMARY_MAX_DEPTH) -> dict[str, Any]:
     """Contrato de uma operação: parâmetros, body, respostas, segurança e lacunas."""
     operation = get_operation(spec, identifier)
     summarizer = SchemaSummarizer(RefResolver(spec.document), max_depth=max_schema_depth)
@@ -194,14 +194,14 @@ def _add_examples(data: dict[str, Any], example: Any, has_example: bool, example
     documented: dict[str, Any] = {}
     if has_example:
         documented["example"] = example
-    for name, item in list(examples.items())[:_MAX_EXAMPLES_PER_MEDIA]:
+    for name, item in list(examples.items())[:MAX_EXAMPLES_PER_MEDIA]:
         if isinstance(item, dict) and "value" in item:
             documented[name] = item["value"]
         elif isinstance(item, dict) and "$ref" in item:
             documented[name] = {"$ref": item["$ref"]}
     if not documented:
         return
-    value, omitted = compact_value(documented, limit=1200)
+    value, omitted = compact_value(documented, limit=MAX_DOCUMENTED_EXAMPLES_CHARS)
     data["documented_examples"] = value if not omitted else "omitido por tamanho; consulte o ponteiro de origem"
-    if len(examples) > _MAX_EXAMPLES_PER_MEDIA:
-        data["documented_examples_omitted"] = len(examples) - _MAX_EXAMPLES_PER_MEDIA
+    if len(examples) > MAX_EXAMPLES_PER_MEDIA:
+        data["documented_examples_omitted"] = len(examples) - MAX_EXAMPLES_PER_MEDIA

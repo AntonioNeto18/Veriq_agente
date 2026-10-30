@@ -5,13 +5,22 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from ..config import (
+    ALLOWED_SPEC_SUFFIXES,
+    MAX_API_DESCRIPTION_CHARS,
+    SCHEMA_SUMMARY_MAX_DEPTH_LIMIT,
+    TOOL_DEFAULT_LIST_LIMIT,
+    TOOL_DEFAULT_PROBLEMS_LIMIT,
+    TOOL_DEFAULT_REFERENCES_LIMIT,
+    TOOL_DEFAULT_SCHEMA_DEPTH,
+    TOOL_LOAD_PROBLEMS_PREVIEW,
+    spec_base_dir,
+)
 from ..core.models import ApiSpec, Severity
 from ..core.ref_resolver import RefResolver
 from ..core.schema_utils import SchemaSummarizer
 from ..core.spec_store import default_store
-from ._common import active_spec, limit_items, run_tool, spec_base_dir
-
-_ALLOWED_SUFFIXES = {".json", ".yaml", ".yml"}
+from ._common import active_spec, limit_items, run_tool
 
 
 def carregar_especificacao(caminho: str) -> dict[str, Any]:
@@ -25,7 +34,8 @@ def carregar_especificacao(caminho: str) -> dict[str, Any]:
     """
     def action() -> dict[str, Any]:
         spec_id, spec = default_store.load_file(_resolve_spec_path(caminho))
-        return {"spec_id": spec_id, **_overview(spec), "problems": _problem_summary(spec, limit=10)}
+        return {"spec_id": spec_id, **_overview(spec),
+                "problems": _problem_summary(spec, limit=TOOL_LOAD_PROBLEMS_PREVIEW)}
 
     return run_tool(action)
 
@@ -35,7 +45,8 @@ def resumo_especificacao() -> dict[str, Any]:
     return run_tool(lambda: _overview(active_spec()))
 
 
-def listar_problemas_especificacao(severidade: str | None = None, limite: int = 30) -> dict[str, Any]:
+def listar_problemas_especificacao(severidade: str | None = None,
+                                   limite: int = TOOL_DEFAULT_PROBLEMS_LIMIT) -> dict[str, Any]:
     """Lista erros, avisos e limitações detectados no parsing da especificação ativa.
 
     Args:
@@ -50,30 +61,32 @@ def listar_problemas_especificacao(severidade: str | None = None, limite: int = 
     return run_tool(action)
 
 
-def listar_schemas(limite: int = 100) -> dict[str, Any]:
+def listar_schemas(limite: int = TOOL_DEFAULT_LIST_LIMIT) -> dict[str, Any]:
     """Lista os nomes dos schemas reutilizáveis (components.schemas ou definitions) da especificação ativa."""
     return run_tool(lambda: limit_items(sorted(active_spec().schema_names), limite, "schemas"))
 
 
-def obter_schema(nome: str, profundidade: int = 3) -> dict[str, Any]:
+def obter_schema(nome: str, profundidade: int = TOOL_DEFAULT_SCHEMA_DEPTH) -> dict[str, Any]:
     """Retorna o resumo estruturado de um schema reutilizável.
 
     Args:
         nome: Nome do schema (ex.: "User").
-        profundidade: Níveis de aninhamento expandidos (1 a 6).
+        profundidade: Níveis de aninhamento expandidos (mínimo 1; valores altos são limitados).
     """
     def action() -> dict[str, Any]:
         spec = active_spec()
         if nome not in spec.schema_names:
             raise ValueError(f"Schema '{nome}' não encontrado. Use listar_schemas para ver os nomes disponíveis.")
         pointer = spec.schema_names[nome]
-        summarizer = SchemaSummarizer(RefResolver(spec.document), max_depth=min(max(profundidade, 1), 6))
+        depth = min(max(profundidade, 1), SCHEMA_SUMMARY_MAX_DEPTH_LIMIT)
+        summarizer = SchemaSummarizer(RefResolver(spec.document), max_depth=depth)
         return {"name": nome, "pointer": pointer, "schema": summarizer.summarize({"$ref": f"#{pointer}"})}
 
     return run_tool(action)
 
 
-def listar_referencias(apenas_problemas: bool = True, limite: int = 50) -> dict[str, Any]:
+def listar_referencias(apenas_problemas: bool = True,
+                       limite: int = TOOL_DEFAULT_REFERENCES_LIMIT) -> dict[str, Any]:
     """Lista referências `$ref` da especificação; por padrão apenas externas ou não resolvidas.
 
     Referências externas nunca são acessadas pelo agente.
@@ -101,8 +114,8 @@ def _resolve_spec_path(caminho: str) -> Path:
     path = (candidate if candidate.is_absolute() else base / candidate).resolve()
     if not path.is_relative_to(base):
         raise PermissionError(f"Acesso negado: o arquivo deve estar dentro de {base}.")
-    if path.suffix.lower() not in _ALLOWED_SUFFIXES:
-        raise ValueError("Extensão não suportada; use .json, .yaml ou .yml.")
+    if path.suffix.lower() not in ALLOWED_SPEC_SUFFIXES:
+        raise ValueError(f"Extensão não suportada; use {', '.join(ALLOWED_SPEC_SUFFIXES)}.")
     return path
 
 
@@ -124,7 +137,7 @@ def _overview(spec: ApiSpec) -> dict[str, Any]:
         "problem_counts": counts,
     }
     if spec.description:
-        data["description"] = spec.description[:500]
+        data["description"] = spec.description[:MAX_API_DESCRIPTION_CHARS]
     return data
 
 

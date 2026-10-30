@@ -11,6 +11,13 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from ..config import (
+    EXAMPLE_BUILDER_MAX_DEPTH,
+    MAX_DESCRIPTION_CHARS,
+    MAX_INLINE_EXAMPLE_CHARS,
+    SCHEMA_SUMMARY_MAX_DEPTH,
+    SCHEMA_SUMMARY_MAX_PROPERTIES,
+)
 from .ref_resolver import RefResolutionError, RefResolver
 
 DOCUMENTED = "documented"
@@ -22,8 +29,6 @@ _CONSTRAINT_KEYS = (
     "minProperties", "maxProperties", "readOnly", "writeOnly", "deprecated",
 )
 _COMBINATORS = ("allOf", "oneOf", "anyOf")
-_MAX_DESCRIPTION = 200
-_MAX_INLINE_EXAMPLE = 300
 _STRING_FORMAT_EXAMPLES = {
     "email": "user@example.com",
     "uuid": "123e4567-e89b-12d3-a456-426614174000",
@@ -45,7 +50,7 @@ def ref_name(ref: str) -> str:
     return ref.rsplit("/", 1)[-1].replace("~1", "/").replace("~0", "~")
 
 
-def compact_value(value: Any, limit: int = _MAX_INLINE_EXAMPLE) -> tuple[Any, bool]:
+def compact_value(value: Any, limit: int = MAX_INLINE_EXAMPLE_CHARS) -> tuple[Any, bool]:
     """Retorna o valor se sua serialização couber no limite; senão `(None, True)`."""
     try:
         size = len(json.dumps(value, ensure_ascii=False, default=str))
@@ -82,7 +87,8 @@ def object_view(schema: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
 
 
 class SchemaSummarizer:
-    def __init__(self, resolver: RefResolver, *, max_depth: int = 4, max_properties: int = 40) -> None:
+    def __init__(self, resolver: RefResolver, *, max_depth: int = SCHEMA_SUMMARY_MAX_DEPTH,
+                 max_properties: int = SCHEMA_SUMMARY_MAX_PROPERTIES) -> None:
         self.resolver = resolver
         self.max_depth = max_depth
         self.max_properties = max_properties
@@ -173,13 +179,13 @@ def _merge_all_of(result: dict[str, Any], parts: list[dict[str, Any]]) -> None:
 
 
 def _truncate(text: str) -> str:
-    return text if len(text) <= _MAX_DESCRIPTION else text[: _MAX_DESCRIPTION - 3] + "..."
+    return text if len(text) <= MAX_DESCRIPTION_CHARS else text[: MAX_DESCRIPTION_CHARS - 3] + "..."
 
 
 class ExampleBuilder:
     """Gera um valor de exemplo para um schema, indicando se é documentado ou sugerido."""
 
-    def __init__(self, resolver: RefResolver, *, max_depth: int = 6) -> None:
+    def __init__(self, resolver: RefResolver, *, max_depth: int = EXAMPLE_BUILDER_MAX_DEPTH) -> None:
         self.resolver = resolver
         self.max_depth = max_depth
 

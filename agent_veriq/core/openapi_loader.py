@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import base64
 import json
-import os
 import re
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -18,12 +17,8 @@ from typing import Any
 
 import yaml
 
+from ..config import MAX_DOCUMENT_DEPTH, MAX_DOCUMENT_NODES, MAX_YAML_ALIASES, max_spec_bytes
 from .models import SpecVersion
-
-DEFAULT_MAX_SPEC_MB = 10
-MAX_YAML_ALIASES = 1_000
-MAX_DEPTH = 256
-MAX_NODES = 2_000_000
 
 _JSON_SUFFIXES = {".json"}
 _YAML_SUFFIXES = {".yaml", ".yml"}
@@ -50,16 +45,6 @@ class LoadedDocument:
     source_name: str
     version: SpecVersion
     version_string: str
-
-
-def max_spec_bytes() -> int:
-    """Limite de tamanho configurado em `VERIQ_MAX_SPEC_MB` (padrão: 10 MB)."""
-    raw = os.environ.get("VERIQ_MAX_SPEC_MB", "")
-    try:
-        megabytes = float(raw) if raw else DEFAULT_MAX_SPEC_MB
-    except ValueError:
-        megabytes = DEFAULT_MAX_SPEC_MB
-    return int(max(megabytes, 0.001) * 1024 * 1024)
 
 
 def load_spec_file(path: str | Path, *, max_bytes: int | None = None) -> LoadedDocument:
@@ -222,16 +207,16 @@ def _check_expanded_size(value: Any) -> None:
     sizes: dict[int, int] = {}
 
     def size(node: Any, depth: int) -> int:
-        if depth > MAX_DEPTH:
-            raise SpecLoadError(f"Documento excede a profundidade máxima de {MAX_DEPTH} níveis.")
+        if depth > MAX_DOCUMENT_DEPTH:
+            raise SpecLoadError(f"Documento excede a profundidade máxima de {MAX_DOCUMENT_DEPTH} níveis.")
         if not isinstance(node, (dict, list, tuple, set)):
             return 1
         if id(node) in sizes:
             return sizes[id(node)]
         children = node.values() if isinstance(node, dict) else node
         total = 1 + sum(size(child, depth + 1) for child in children)
-        if total > MAX_NODES:
-            raise SpecLoadError(f"Documento excede o limite de {MAX_NODES} nós.")
+        if total > MAX_DOCUMENT_NODES:
+            raise SpecLoadError(f"Documento excede o limite de {MAX_DOCUMENT_NODES} nós.")
         sizes[id(node)] = total
         return total
 

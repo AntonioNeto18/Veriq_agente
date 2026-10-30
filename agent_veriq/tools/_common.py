@@ -6,9 +6,7 @@ esperados viram mensagens para o modelo em vez de exceções.
 
 from __future__ import annotations
 
-import os
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
 from ..core.endpoint_analyzer import OperationNotFoundError
@@ -40,13 +38,3 @@ def limit_items(items: list[Any], limit: int, key: str) -> dict[str, Any]:
     if len(items) > limit:
         result["omitted"] = len(items) - limit
     return result
-
-
-def spec_base_dir() -> Path:
-    """Diretório a partir do qual arquivos OpenAPI podem ser lidos (`VERIQ_SPEC_DIR`, padrão: diretório atual)."""
-    return Path(os.environ.get("VERIQ_SPEC_DIR") or Path.cwd()).resolve()
-
-
-def output_dir() -> Path:
-    """Diretório onde collections são gravadas (`VERIQ_OUTPUT_DIR`, padrão: ./output)."""
-    return Path(os.environ.get("VERIQ_OUTPUT_DIR") or Path.cwd() / "output").resolve()

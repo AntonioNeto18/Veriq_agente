@@ -2,19 +2,12 @@
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 from google.adk.agents import LlmAgent
 from google.adk.skills import load_skill_from_dir
 from google.adk.tools.skill_toolset import SkillToolset
 
+from .config import AGENT_NAME, SKILL_NAMES, SKILL_TOOL_ALLOWLIST, SKILLS_DIR, model_name
 from .tools import ALL_TOOLS
-
-SKILLS_DIR = Path(__file__).resolve().parent / "skills"
-SKILL_NAMES = ("openapi-analysis", "endpoint-explanation", "api-test-planning", "postman-collection")
-# Somente ferramentas de leitura de Skills; `run_skill_script` (execução de scripts) nunca é exposta.
-SKILL_TOOL_ALLOWLIST = ["list_skills", "load_skill", "load_skill_resource"]
 
 INSTRUCTION = """\
 Você é o agent-veriq, um analista de especificações OpenAPI (JSON/YAML). Responda em português.
@@ -48,8 +41,8 @@ def build_skill_toolset() -> SkillToolset:
 
 def build_agent() -> LlmAgent:
     return LlmAgent(
-        name="veriq",
-        model=os.environ.get("VERIQ_MODEL") or LlmAgent.DEFAULT_MODEL,
+        name=AGENT_NAME,
+        model=model_name() or LlmAgent.DEFAULT_MODEL,
         description="Analisa especificações OpenAPI, planeja testes e gera collections Postman sem executar requisições.",
         instruction=INSTRUCTION,
         tools=[*ALL_TOOLS, build_skill_toolset()],
