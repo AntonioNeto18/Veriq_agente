@@ -36,7 +36,7 @@ def planejar_testes_conjunto(
         spec = active_spec()
         identifiers = operacoes or [op.key for op in filter_operations(spec, tag=tag)]
         if not identifiers:
-            raise ValueError("Informe operações ou uma tag com operações.")
+            raise ValueError("Provide operations or a tag that has operations.")
         selected = identifiers[:MAX_PLANNED_OPERATIONS]
         result: dict[str, Any] = {
             "plans": plan_tests_for_operations(spec, selected, max_scenarios_per_operation=max(1, max_cenarios_por_operacao))

@@ -41,7 +41,7 @@ _STRING_FORMAT_EXAMPLES = {
     "ipv4": "192.0.2.10",
     "ipv6": "2001:db8::10",
     "byte": "ZXhlbXBsbw==",
-    "password": "<senha>",
+    "password": "<password>",
 }
 
 

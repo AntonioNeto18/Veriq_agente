@@ -37,7 +37,7 @@ def test_invalid_yaml_reports_line():
     with pytest.raises(SpecLoadError) as error:
         load_spec_file(FIXTURES / "invalid_syntax.yaml")
     assert error.value.line is not None
-    assert "YAML inválido" in str(error.value)
+    assert "Invalid YAML" in str(error.value)
 
 
 def test_invalid_json_reports_line():
@@ -49,11 +49,11 @@ def test_invalid_json_reports_line():
 @pytest.mark.parametrize(
     ("text", "message"),
     [
-        ("info: {title: x}\n", "não declara 'openapi' nem 'swagger'"),
-        ("openapi: 4.0.0\n", "não suportada"),
-        ("swagger: '1.2'\n", "não suportada"),
-        ("- a\n- b\n", r"objeto \(mapa\)"),
-        ("   \n", "vazio"),
+        ("info: {title: x}\n", "declares neither 'openapi' nor 'swagger'"),
+        ("openapi: 4.0.0\n", "Unsupported"),
+        ("swagger: '1.2'\n", "Unsupported"),
+        ("- a\n- b\n", r"object \(map\)"),
+        ("   \n", "Empty file"),
     ],
 )
 def test_rejects_non_openapi_documents(text, message):
@@ -62,18 +62,18 @@ def test_rejects_non_openapi_documents(text, message):
 
 
 def test_rejects_file_over_size_limit():
-    with pytest.raises(SpecLoadError, match="excede o limite"):
+    with pytest.raises(SpecLoadError, match="exceeds the"):
         load_spec_file(FIXTURES / "users_v3_0.yaml", max_bytes=100)
 
 
 def test_size_limit_from_environment(monkeypatch):
     monkeypatch.setenv("VERIQ_MAX_SPEC_MB", "0.0001")
-    with pytest.raises(SpecLoadError, match="excede o limite"):
+    with pytest.raises(SpecLoadError, match="exceeds the"):
         load_spec_file(FIXTURES / "users_v3_0.yaml")
 
 
 def test_missing_file():
-    with pytest.raises(SpecLoadError, match="não encontrado"):
+    with pytest.raises(SpecLoadError, match="not found"):
         load_spec_file(FIXTURES / "nao_existe.yaml")
 
 
@@ -82,7 +82,7 @@ def test_billion_laughs_is_rejected():
     for level in range(1, 10):
         previous = f"*a{level - 1}"
         lines.append(f"a{level}: &a{level} [{', '.join([previous] * 9)}]")
-    with pytest.raises(SpecLoadError, match="limite de .* nós"):
+    with pytest.raises(SpecLoadError, match="limit of .* nodes"):
         load_spec_text("\n".join(lines))
 
 

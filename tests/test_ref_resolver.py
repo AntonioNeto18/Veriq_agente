@@ -42,7 +42,7 @@ def test_external_reference_is_not_accessed():
 
 
 def test_missing_reference_raises():
-    with pytest.raises(RefResolutionError, match="não existe"):
+    with pytest.raises(RefResolutionError, match="does not exist"):
         RefResolver(DOCUMENT).deref({"$ref": "#/components/schemas/Nope"})
 
 

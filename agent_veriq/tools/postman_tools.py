@@ -45,8 +45,8 @@ def gerar_postman_collection(
         if retornar_json:
             text = json.dumps(collection, ensure_ascii=False)
             if len(text) > MAX_INLINE_COLLECTION_CHARS:
-                hint = "use o arquivo salvo." if salvar_arquivo else "gere novamente com salvar_arquivo=true."
-                result["json_omitted"] = f"Collection com {len(text)} caracteres excede o limite para resposta; {hint}"
+                hint = "use the saved file." if salvar_arquivo else "generate again with salvar_arquivo=true."
+                result["json_omitted"] = f"Collection with {len(text)} characters exceeds the response limit; {hint}"
             else:
                 result["collection"] = collection
         return result

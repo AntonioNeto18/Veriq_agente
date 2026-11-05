@@ -32,7 +32,7 @@ class SpecLoadError(Exception):
     """Erro de leitura, parsing ou versão não suportada, com mensagem para o usuário."""
 
     def __init__(self, message: str, *, line: int | None = None, column: int | None = None) -> None:
-        location = f" (linha {line}, coluna {column})" if line is not None else ""
+        location = f" (line {line}, column {column})" if line is not None else ""
         super().__init__(f"{message}{location}")
         self.line = line
         self.column = column
@@ -52,13 +52,13 @@ def load_spec_file(path: str | Path, *, max_bytes: int | None = None) -> LoadedD
     file_path = Path(path)
     limit = max_bytes if max_bytes is not None else max_spec_bytes()
     if not file_path.is_file():
-        raise SpecLoadError(f"Arquivo não encontrado ou não é um arquivo regular: {file_path.name}")
+        raise SpecLoadError(f"File not found or not a regular file: {file_path.name}")
     if file_path.stat().st_size > limit:
-        raise SpecLoadError(f"Arquivo excede o limite de {limit} bytes: {file_path.name}")
+        raise SpecLoadError(f"File exceeds the {limit}-byte limit: {file_path.name}")
     with file_path.open("rb") as handle:
         data = handle.read(limit + 1)
     if len(data) > limit:
-        raise SpecLoadError(f"Arquivo excede o limite de {limit} bytes: {file_path.name}")
+        raise SpecLoadError(f"File exceeds the {limit}-byte limit: {file_path.name}")
     return load_spec_bytes(data, source_name=file_path.name, format_hint=_format_from_suffix(file_path))
 
 
@@ -74,15 +74,15 @@ def load_spec_bytes(
 ) -> LoadedDocument:
     limit = max_bytes if max_bytes is not None else max_spec_bytes()
     if len(data) > limit:
-        raise SpecLoadError(f"Conteúdo excede o limite de {limit} bytes: {source_name}")
+        raise SpecLoadError(f"Content exceeds the {limit}-byte limit: {source_name}")
     text = _decode(data, source_name)
     if not text.strip():
-        raise SpecLoadError(f"Arquivo vazio: {source_name}")
+        raise SpecLoadError(f"Empty file: {source_name}")
 
     raw, detected_format = _parse(text, format_hint)
     document = _normalize(raw)
     if not isinstance(document, dict):
-        raise SpecLoadError("O documento deve ser um objeto (mapa) na raiz.")
+        raise SpecLoadError("The document root must be an object (map).")
     version, version_string = detect_version(document)
     return LoadedDocument(document, detected_format, source_name, version, version_string)
 
@@ -93,14 +93,14 @@ def detect_version(document: dict[str, Any]) -> tuple[SpecVersion, str]:
         value = str(document["swagger"]).strip()
         if value == "2.0":
             return SpecVersion.SWAGGER_2_0, value
-        raise SpecLoadError(f"Versão Swagger não suportada: '{value}'. Suportadas: 2.0, 3.0.x e 3.1.x.")
+        raise SpecLoadError(f"Unsupported Swagger version: '{value}'. Supported: 2.0, 3.0.x and 3.1.x.")
     if "openapi" in document:
         value = str(document["openapi"]).strip()
         for version, pattern in _VERSION_PATTERNS.items():
             if pattern.match(value):
                 return version, value
-        raise SpecLoadError(f"Versão OpenAPI não suportada: '{value}'. Suportadas: 2.0, 3.0.x e 3.1.x.")
-    raise SpecLoadError("O documento não declara 'openapi' nem 'swagger'; não parece ser uma especificação OpenAPI.")
+        raise SpecLoadError(f"Unsupported OpenAPI version: '{value}'. Supported: 2.0, 3.0.x and 3.1.x.")
+    raise SpecLoadError("The document declares neither 'openapi' nor 'swagger'; it does not look like an OpenAPI specification.")
 
 
 def _format_from_suffix(path: Path) -> str | None:
@@ -116,7 +116,7 @@ def _decode(data: bytes, source_name: str) -> str:
     try:
         return data.decode("utf-8-sig")
     except UnicodeDecodeError as error:
-        raise SpecLoadError(f"O arquivo {source_name} não está em UTF-8 válido (byte {error.start}).") from None
+        raise SpecLoadError(f"File {source_name} is not valid UTF-8 (byte {error.start}).") from None
 
 
 def _parse(text: str, format_hint: str | None) -> tuple[Any, str]:
@@ -136,9 +136,9 @@ def _parse_json(text: str) -> Any:
     try:
         return json.loads(text)
     except json.JSONDecodeError as error:
-        raise SpecLoadError(f"JSON inválido: {error.msg}", line=error.lineno, column=error.colno) from None
+        raise SpecLoadError(f"Invalid JSON: {error.msg}", line=error.lineno, column=error.colno) from None
     except RecursionError:
-        raise SpecLoadError("JSON excede a profundidade máxima permitida.") from None
+        raise SpecLoadError("JSON exceeds the maximum allowed depth.") from None
 
 
 class _LimitedSafeLoader(yaml.SafeLoader):
@@ -152,7 +152,7 @@ class _LimitedSafeLoader(yaml.SafeLoader):
         if self.check_event(yaml.AliasEvent):
             self._alias_count += 1
             if self._alias_count > MAX_YAML_ALIASES:
-                raise SpecLoadError(f"YAML com aliases demais (limite: {MAX_YAML_ALIASES}).")
+                raise SpecLoadError(f"YAML has too many aliases (limit: {MAX_YAML_ALIASES}).")
         return super().compose_node(parent, index)
 
 
@@ -162,14 +162,14 @@ def _parse_yaml(text: str) -> Any:
         return loader.get_single_data()
     except yaml.MarkedYAMLError as error:
         mark = error.problem_mark
-        problem = error.problem or "erro de sintaxe"
+        problem = error.problem or "syntax error"
         if mark is None:
-            raise SpecLoadError(f"YAML inválido: {problem}") from None
-        raise SpecLoadError(f"YAML inválido: {problem}", line=mark.line + 1, column=mark.column + 1) from None
+            raise SpecLoadError(f"Invalid YAML: {problem}") from None
+        raise SpecLoadError(f"Invalid YAML: {problem}", line=mark.line + 1, column=mark.column + 1) from None
     except yaml.YAMLError as error:
-        raise SpecLoadError(f"YAML inválido: {error}") from None
+        raise SpecLoadError(f"Invalid YAML: {error}") from None
     except RecursionError:
-        raise SpecLoadError("YAML excede a profundidade máxima permitida.") from None
+        raise SpecLoadError("YAML exceeds the maximum allowed depth.") from None
     finally:
         loader.dispose()
 
@@ -208,7 +208,7 @@ def _check_expanded_size(value: Any) -> None:
 
     def size(node: Any, depth: int) -> int:
         if depth > MAX_DOCUMENT_DEPTH:
-            raise SpecLoadError(f"Documento excede a profundidade máxima de {MAX_DOCUMENT_DEPTH} níveis.")
+            raise SpecLoadError(f"Document exceeds the maximum depth of {MAX_DOCUMENT_DEPTH} levels.")
         if not isinstance(node, (dict, list, tuple, set)):
             return 1
         if id(node) in sizes:
@@ -216,7 +216,7 @@ def _check_expanded_size(value: Any) -> None:
         children = node.values() if isinstance(node, dict) else node
         total = 1 + sum(size(child, depth + 1) for child in children)
         if total > MAX_DOCUMENT_NODES:
-            raise SpecLoadError(f"Documento excede o limite de {MAX_DOCUMENT_NODES} nós.")
+            raise SpecLoadError(f"Document exceeds the limit of {MAX_DOCUMENT_NODES} nodes.")
         sizes[id(node)] = total
         return total
 

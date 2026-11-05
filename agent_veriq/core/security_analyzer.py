@@ -20,8 +20,8 @@ _OAUTH_FLOW_URLS = {
     "authorizationCode": ("authorizationUrl", "tokenUrl"),
 }
 DISCLAIMER = (
-    "Resultado baseado apenas no que está declarado na especificação; "
-    "o comportamento real do servidor não foi verificado."
+    "Result based only on what is declared in the specification; "
+    "the real server behaviour was not verified."
 )
 
 
@@ -47,7 +47,7 @@ class SchemeUsage:
 
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {"scheme": self.name, "scopes": self.scopes}
-        data["type"] = self.description if self.defined else "não definido em securitySchemes"
+        data["type"] = self.description if self.defined else "not defined in securitySchemes"
         return data
 
 
@@ -88,17 +88,17 @@ def describe_scheme(scheme: SecurityScheme) -> str:
             return f"HTTP Bearer ({scheme.bearer_format})" if scheme.bearer_format else "HTTP Bearer"
         if scheme.scheme == "basic":
             return "HTTP Basic"
-        return f"HTTP {scheme.scheme}" if scheme.scheme else "HTTP (scheme não declarado)"
+        return f"HTTP {scheme.scheme}" if scheme.scheme else "HTTP (scheme not declared)"
     if scheme.type == "apiKey":
-        return f"API key em {scheme.location or '?'}: {scheme.parameter_name or '?'}"
+        return f"API key in {scheme.location or '?'}: {scheme.parameter_name or '?'}"
     if scheme.type == "oauth2":
-        flows = ", ".join(sorted(scheme.flows)) or "nenhum fluxo declarado"
+        flows = ", ".join(sorted(scheme.flows)) or "no flow declared"
         return f"OAuth 2.0 ({flows})"
     if scheme.type == "openIdConnect":
         return "OpenID Connect"
     if scheme.type == "mutualTLS":
         return "Mutual TLS"
-    return f"Tipo desconhecido: {scheme.type}"
+    return f"Unknown type: {scheme.type}"
 
 
 def scheme_to_dict(scheme: SecurityScheme) -> dict[str, Any]:
@@ -131,11 +131,11 @@ def analyze_operation_security(spec: ApiSpec, operation: Operation) -> Operation
     result = OperationSecurity(operation.key, operation.operation_id, AuthStatus.NONE_DECLARED, source, pointer)
     if _has_invalid_security(spec, operation):
         result.status = AuthStatus.INDETERMINATE
-        result.notes.append("O campo 'security' aplicável é inválido e não pôde ser interpretado com confiança.")
+        result.notes.append("The applicable 'security' field is invalid and could not be interpreted reliably.")
         return result
     if not requirements:
         if source is SecuritySource.OPERATION_EMPTY_OVERRIDE and spec.global_security:
-            result.notes.append("A operação remove explicitamente a segurança global com 'security: []'.")
+            result.notes.append("The operation explicitly removes global security with 'security: []'.")
         return result
 
     for requirement in requirements:
@@ -148,7 +148,7 @@ def analyze_operation_security(spec: ApiSpec, operation: Operation) -> Operation
         result.status = AuthStatus.INDETERMINATE
     elif result.optional:
         result.status = AuthStatus.NONE_DECLARED
-        result.notes.append("Autenticação declarada como opcional: uma das alternativas é vazia ({}).")
+        result.notes.append("Authentication declared as optional: one of the alternatives is empty ({}).")
     else:
         result.status = AuthStatus.DECLARED_REQUIRED
     return result
@@ -180,17 +180,17 @@ def find_security_gaps(spec: ApiSpec) -> list[Issue]:
     used = _collect_used_schemes(spec)
     for name in sorted(used - set(spec.security_schemes)):
         gaps.append(Issue("undefined_security_scheme",
-                          f"Esquema '{name}' é exigido em requisitos de segurança mas não está definido.",
+                          f"Scheme '{name}' is required by security requirements but is not defined.",
                           Severity.ERROR, _schemes_pointer(spec)))
     for name in sorted(set(spec.security_schemes) - used):
-        gaps.append(Issue("unused_security_scheme", f"Esquema '{name}' está definido mas não é exigido por "
-                          "nenhuma operação.", Severity.INFO, spec.security_schemes[name].pointer))
+        gaps.append(Issue("unused_security_scheme", f"Scheme '{name}' is defined but not required by "
+                          "any operation.", Severity.INFO, spec.security_schemes[name].pointer))
     gaps.extend(_scope_gaps(spec))
     gaps.extend(_response_consistency_gaps(spec))
     if not spec.security_schemes and spec.global_security is None and all(
             op.security is None for op in spec.operations):
-        gaps.append(Issue("no_security_declared", "A especificação não declara nenhum esquema nem requisito de "
-                          "segurança.", Severity.INFO, "/"))
+        gaps.append(Issue("no_security_declared", "The specification declares no security scheme or "
+                          "requirement.", Severity.INFO, "/"))
     return gaps
 
 
@@ -200,12 +200,12 @@ def find_security_gaps(spec: ApiSpec) -> list[Issue]:
 def _usage(spec: ApiSpec, name: str, scopes: list[str], result: OperationSecurity) -> SchemeUsage:
     scheme = spec.security_schemes.get(name)
     if scheme is None:
-        result.notes.append(f"Esquema '{name}' não está definido em securitySchemes/securityDefinitions.")
+        result.notes.append(f"Scheme '{name}' is not defined in securitySchemes/securityDefinitions.")
         return SchemeUsage(name, scopes, defined=False)
     if scheme.type not in KNOWN_SCHEME_TYPES:
-        result.notes.append(f"Esquema '{name}' tem tipo não reconhecido: '{scheme.type}'.")
+        result.notes.append(f"Scheme '{name}' has an unrecognised type: '{scheme.type}'.")
     elif scheme.type == "apiKey" and (not scheme.location or not scheme.parameter_name):
-        result.notes.append(f"API key '{name}' não declara 'in' e/ou 'name'.")
+        result.notes.append(f"API key '{name}' does not declare 'in' and/or 'name'.")
     return SchemeUsage(name, scopes, defined=True, description=describe_scheme(scheme))
 
 
@@ -243,30 +243,30 @@ def _scheme_definition_gaps(spec: ApiSpec) -> list[Issue]:
     for scheme in spec.security_schemes.values():
         problem = None
         if scheme.type not in KNOWN_SCHEME_TYPES:
-            problem = f"tipo '{scheme.type}' não reconhecido"
+            problem = f"unrecognised type '{scheme.type}'"
         elif scheme.type == "apiKey" and (not scheme.location or not scheme.parameter_name):
-            problem = "API key sem 'in' e/ou 'name'"
+            problem = "API key without 'in' and/or 'name'"
         elif scheme.type == "http" and not scheme.scheme:
-            problem = "esquema HTTP sem 'scheme'"
+            problem = "HTTP scheme without 'scheme'"
         elif scheme.type == "openIdConnect" and not scheme.openid_connect_url:
-            problem = "OpenID Connect sem 'openIdConnectUrl'"
+            problem = "OpenID Connect without 'openIdConnectUrl'"
         elif scheme.type == "oauth2":
             problem = _oauth_problem(scheme)
         if problem:
-            gaps.append(Issue("incomplete_security_scheme", f"Esquema '{scheme.name}': {problem}.",
+            gaps.append(Issue("incomplete_security_scheme", f"Scheme '{scheme.name}': {problem}.",
                               Severity.WARNING, scheme.pointer))
     return gaps
 
 
 def _oauth_problem(scheme: SecurityScheme) -> str | None:
     if not scheme.flows:
-        return "OAuth 2.0 sem fluxos declarados"
+        return "OAuth 2.0 without declared flows"
     for flow_name, flow in scheme.flows.items():
         if not isinstance(flow, dict):
-            return f"fluxo '{flow_name}' inválido"
+            return f"invalid flow '{flow_name}'"
         missing = [url for url in _OAUTH_FLOW_URLS.get(flow_name, ()) if not flow.get(url)]
         if missing:
-            return f"fluxo '{flow_name}' sem {', '.join(missing)}"
+            return f"flow '{flow_name}' without {', '.join(missing)}"
     return None
 
 
@@ -289,8 +289,8 @@ def _scope_gaps(spec: ApiSpec) -> list[Issue]:
                 if scheme is None or scheme.type != "oauth2":
                     continue
                 for scope in sorted(set(scopes) - _declared_scopes(scheme)):
-                    gaps.append(Issue("undeclared_scope", f"Scope '{scope}' exigido de '{name}' não está "
-                                      "declarado nos fluxos OAuth.", Severity.WARNING, pointer))
+                    gaps.append(Issue("undeclared_scope", f"Scope '{scope}' required from '{name}' is not "
+                                      "declared in the OAuth flows.", Severity.WARNING, pointer))
     return gaps
 
 
@@ -300,9 +300,9 @@ def _response_consistency_gaps(spec: ApiSpec) -> list[Issue]:
         status = analyze_operation_security(spec, operation).status
         codes = {response.status_code for response in operation.responses}
         if status is AuthStatus.DECLARED_REQUIRED and not codes & {"401", "403"}:
-            gaps.append(Issue("auth_errors_not_documented", f"{operation.key} declara autenticação mas não "
-                              "documenta respostas 401/403.", Severity.INFO, operation.pointer))
+            gaps.append(Issue("auth_errors_not_documented", f"{operation.key} declares authentication but does not "
+                              "document 401/403 responses.", Severity.INFO, operation.pointer))
         if status is AuthStatus.NONE_DECLARED and "401" in codes:
-            gaps.append(Issue("auth_response_without_security", f"{operation.key} documenta 401 mas não declara "
-                              "requisito de segurança.", Severity.WARNING, operation.pointer))
+            gaps.append(Issue("auth_response_without_security", f"{operation.key} documents 401 but declares no "
+                              "security requirement.", Severity.WARNING, operation.pointer))
     return gaps

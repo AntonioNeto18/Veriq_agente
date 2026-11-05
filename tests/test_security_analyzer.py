@@ -62,14 +62,14 @@ def test_scheme_descriptions(spec):
     describe = lambda op: _analyze(spec, op).alternatives[0][0].description  # noqa: E731
     assert describe("inheritedOp") == "HTTP Bearer (JWT)"
     assert describe("basicOp") == "HTTP Basic"
-    assert describe("cookieOp") == "API key em cookie: session"
+    assert describe("cookieOp") == "API key in cookie: session"
     assert describe("oidcOp") == "OpenID Connect"
 
 
 def test_to_dict_is_compact(spec):
     data = _analyze(spec, "unknownOp").to_dict()
     assert data["status"] == "indeterminate"
-    assert data["alternatives"] == [[{"scheme": "ghost", "scopes": [], "type": "não definido em securitySchemes"}]]
+    assert data["alternatives"] == [[{"scheme": "ghost", "scopes": [], "type": "not defined in securitySchemes"}]]
     assert data["notes"]
 
 
@@ -92,7 +92,7 @@ def test_swagger2_global_and_override(load_fixture):
 def test_overview_counts(spec):
     overview = security_overview(spec)
     assert overview["operations_by_status"] == {"declared_required": 7, "none_declared": 2, "indeterminate": 4}
-    assert "não foi verificado" in overview["disclaimer"]
+    assert "was not verified" in overview["disclaimer"]
     names = {scheme["name"] for scheme in overview["security_schemes"]}
     assert {"bearer", "oauth", "oidc"} <= names
 

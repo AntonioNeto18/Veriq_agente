@@ -142,3 +142,19 @@ tests/           # testes unitários e fixtures
 - Referências externas não são resolvidas.
 - Em OpenAPI 3.1, `$ref` com campos irmãos é mesclado apenas na expansão de schemas.
 - O agente identifica o que está **declarado** no contrato; não comprova o comportamento do servidor.
+
+## Pacotes de skill (Claude Code, Cursor, Codex etc.)
+
+`packaging/` gera versões do veriq que rodam em qualquer agente compatível com SKILL.md, sem o
+Google ADK: um CLI (`scripts/veriq.py`) sobre uma cópia de `core/` e `tools/`, mais SKILL.md em inglês.
+
+```bash
+python packaging/build.py   # gera packaging/dist/*.zip
+```
+
+| Pacote | Conteúdo |
+|---|---|
+| `openapi-explainer` | resumo, endpoints, explicação de endpoint, schemas, `$ref`, autenticação declarada |
+| `openapi-test-suite-pro` | tudo acima + planejamento de testes e collection Postman v2.1.0 |
+
+Os pacotes dependem de `pyyaml` e `jsonschema`. Rode o build novamente sempre que `core/` mudar.

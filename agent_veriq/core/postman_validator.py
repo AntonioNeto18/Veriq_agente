@@ -31,9 +31,9 @@ def validate_collection(collection: dict[str, Any]) -> list[str]:
     try:
         json.loads(json.dumps(collection, ensure_ascii=False))
     except (TypeError, ValueError) as error:
-        return [f"Collection não é JSON serializável: {error}"]
+        return [f"Collection is not JSON serializable: {error}"]
     errors = [
-        f"{'/'.join(str(part) for part in error.absolute_path) or '<raiz>'}: {error.message}"
+        f"{'/'.join(str(part) for part in error.absolute_path) or '<root>'}: {error.message}"
         for error in sorted(_validator().iter_errors(collection), key=lambda item: list(item.absolute_path))
     ][:MAX_REPORTED_VALIDATION_ERRORS]
     errors.extend(_credential_problems(collection))
@@ -55,7 +55,7 @@ def _credential_problems(collection: dict[str, Any]) -> list[str]:
                 continue
             value = attribute.get("value")
             if isinstance(value, str) and value and not _VARIABLE.match(value) and value != INVALID_CREDENTIAL:
-                problems.append(f"{location}: credencial '{attribute['key']}' deve ser uma variável {{{{...}}}}.")
+                problems.append(f"{location}: credential '{attribute['key']}' must be a {{{{...}}}} variable.")
     return problems
 
 

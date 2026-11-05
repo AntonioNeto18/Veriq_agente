@@ -22,27 +22,27 @@ from .security_analyzer import AuthStatus, analyze_operation_security
 
 _VALIDATION_STATUSES = ("400", "422", "4XX")
 _INVALID_FORMATS = {
-    "email": "email-invalido",
-    "uuid": "nao-e-um-uuid",
+    "email": "invalid-email",
+    "uuid": "not-a-uuid",
     "date": "31/13/2024",
-    "date-time": "nao-e-uma-data",
-    "uri": "nao e uma uri",
-    "url": "nao e uma url",
+    "date-time": "not-a-date",
+    "uri": "not a uri",
+    "url": "not a url",
     "ipv4": "999.999.999.999",
-    "ipv6": "nao-e-ipv6",
+    "ipv6": "not-ipv6",
 }
 _WRONG_TYPE_VALUES = {
     "string": 12345,
     "integer": "abc",
     "number": "abc",
-    "boolean": "nao-booleano",
-    "array": "nao-e-lista",
-    "object": "nao-e-objeto",
+    "boolean": "not-a-boolean",
+    "array": "not-a-list",
+    "object": "not-an-object",
 }
 _UNSUPPORTED_CONTENT_TYPE = "text/plain"
-_NOTE_NOT_EXECUTED = "Cenários planejados a partir do contrato; nenhum foi executado."
-_NOTE_BASIS = ("basis=documented: a restrição e o status esperado constam no contrato, mas a associação entre "
-               "eles é inferida; basis=hypothesis: o status esperado não está documentado.")
+_NOTE_NOT_EXECUTED = "Scenarios planned from the contract; none was executed."
+_NOTE_BASIS = ("basis=documented: the constraint and the expected status are in the contract, but their pairing "
+               "is inferred; basis=hypothesis: the expected status is not documented.")
 
 
 class Basis(str, Enum):
@@ -69,7 +69,7 @@ class TestScenario:
             "category": self.category,
             "description": self.description,
             "inputs": self.inputs,
-            "expected": {"status": self.expected_status or "não documentado"},
+            "expected": {"status": self.expected_status or "not documented"},
             "basis": self.basis.value,
             "source": self.source_pointer,
         }
@@ -173,18 +173,18 @@ class _OperationPlanner:
         documented = [code for code in self.codes if code in _VALIDATION_STATUSES]
         if documented:
             return documented, Basis.DOCUMENTED, []
-        return [], Basis.HYPOTHESIS, ["A especificação não documenta resposta para entrada inválida; "
-                                      "espera-se um 4xx (hipótese)."]
+        return [], Basis.HYPOTHESIS, ["The specification documents no response for invalid input; "
+                                      "a 4xx is expected (hypothesis)."]
 
     def _positive_scenarios(self) -> None:
         success = [code for code in self.codes if code.startswith("2")]
         basis = Basis.DOCUMENTED if success else Basis.HYPOTHESIS
-        notes = [] if success else ["Nenhuma resposta 2xx documentada."]
-        self._add("positive", "Requisição válida com os dados de referência.", {"use": "valid_request"},
+        notes = [] if success else ["No documented 2xx response."]
+        self._add("positive", "Valid request with the reference data.", {"use": "valid_request"},
                   success, basis, self.operation.pointer, notes)
         optional = [p.name for p in self.operation.parameters if not p.required]
         if optional:
-            self._add("positive", "Requisição válida incluindo parâmetros opcionais: " + ", ".join(optional) + ".",
+            self._add("positive", "Valid request including optional parameters: " + ", ".join(optional) + ".",
                       {"use": "valid_request", "add_optional_parameters": optional}, success, basis,
                       self.operation.pointer, notes)
 
@@ -192,32 +192,32 @@ class _OperationPlanner:
         security = analyze_operation_security(self.spec, self.operation)
         if security.status is not AuthStatus.DECLARED_REQUIRED:
             if security.status is AuthStatus.INDETERMINATE:
-                self.notes.append("Segurança indeterminada: cenários de autenticação não foram gerados.")
+                self.notes.append("Indeterminate security: authentication scenarios were not generated.")
             return
         expected = ["401"] if "401" in self.codes else []
         basis = Basis.DOCUMENTED if expected else Basis.HYPOTHESIS
-        notes = [] if expected else ["401 não documentado; status esperado é hipótese."]
+        notes = [] if expected else ["401 not documented; expected status is a hypothesis."]
         schemes = sorted({usage.name for alternative in security.alternatives for usage in alternative})
-        self._add("authentication", "Requisição sem credenciais.", {"use": "valid_request", "auth": "omitted"},
+        self._add("authentication", "Request without credentials.", {"use": "valid_request", "auth": "omitted"},
                   expected, basis, security.pointer, notes)
-        self._add("authentication", "Requisição com credencial inválida ou expirada.",
+        self._add("authentication", "Request with an invalid or expired credential.",
                   {"use": "valid_request", "auth": "invalid", "schemes": schemes}, expected, basis,
                   security.pointer, notes)
         scoped = [usage for alternative in security.alternatives for usage in alternative if usage.scopes]
         if scoped:
             forbidden = ["403"] if "403" in self.codes else []
-            self._add("authorization", "Credencial válida sem os scopes exigidos: "
+            self._add("authorization", "Valid credential without the required scopes: "
                       + ", ".join(sorted({scope for usage in scoped for scope in usage.scopes})) + ".",
                       {"use": "valid_request", "auth": "missing_scopes"}, forbidden,
                       Basis.DOCUMENTED if forbidden else Basis.HYPOTHESIS, security.pointer,
-                      [] if forbidden else ["403 não documentado; status esperado é hipótese."])
+                      [] if forbidden else ["403 not documented; expected status is a hypothesis."])
 
     def _parameter_scenarios(self, parameter: Parameter) -> None:
         expected, basis, notes = self._validation_expectation()
         target = {"parameter": parameter.name, "in": parameter.location}
         label = f"{parameter.location} '{parameter.name}'"
         if parameter.required and parameter.location != "path":
-            self._add("missing_required", f"Omitir o parâmetro obrigatório {label}.",
+            self._add("missing_required", f"Omit the required parameter {label}.",
                       {**target, "action": "omit"}, expected, basis, parameter.pointer, notes)
         schema = self.resolver.inline(parameter.schema) if parameter.schema else {}
         for category, description, value in _invalid_values(schema):
@@ -226,8 +226,8 @@ class _OperationPlanner:
         if parameter.location == "path":
             not_found = ["404"] if "404" in self.codes else []
             if not_found:
-                self._add("not_found", f"{label}: identificador válido de recurso inexistente.",
-                          {**target, "value": "<id inexistente>"}, not_found, Basis.DOCUMENTED, parameter.pointer)
+                self._add("not_found", f"{label}: valid identifier of a non-existent resource.",
+                          {**target, "value": "<non-existent id>"}, not_found, Basis.DOCUMENTED, parameter.pointer)
 
     def _body_scenarios(self) -> None:
         body = self.operation.request_body
@@ -235,25 +235,25 @@ class _OperationPlanner:
             return
         expected, basis, notes = self._validation_expectation()
         if body.required:
-            self._add("missing_required", "Enviar a requisição sem body.", {"use": "valid_request", "body": None},
+            self._add("missing_required", "Send the request without a body.", {"use": "valid_request", "body": None},
                       expected, basis, body.pointer, notes)
         schema = self.resolver.inline(self.media.schema) if self.media.schema else {}
         properties, required = object_view(schema)
         for name in required:
-            self._add("missing_required", f"Body sem o campo obrigatório '{name}'.",
+            self._add("missing_required", f"Body without the required field '{name}'.",
                       {"use": "valid_request", "body_remove": name}, expected, basis, body.pointer, notes)
         for name, field_schema in properties.items():
             if not isinstance(field_schema, dict) or field_schema.get("readOnly") is True:
                 continue
             for category, description, value in _invalid_values(field_schema):
-                self._add(category, f"Campo '{name}': {description}.",
+                self._add(category, f"Field '{name}': {description}.",
                           {"use": "valid_request", "body_set": {name: value}}, expected, basis, body.pointer, notes)
             _, nullable = normalized_type(field_schema)
             if name in required and not nullable and "type" in field_schema:
-                self._add("null_value", f"Campo obrigatório '{name}' com valor null (não declarado como nullable).",
+                self._add("null_value", f"Required field '{name}' set to null (not declared nullable).",
                           {"use": "valid_request", "body_set": {name: None}}, expected, basis, body.pointer, notes)
         if any(isinstance(value, dict) and ("properties" in value or "items" in value) for value in properties.values()):
-            self.notes.append("Campos aninhados não foram expandidos em cenários individuais.")
+            self.notes.append("Nested fields were not expanded into individual scenarios.")
 
     def _content_type_scenario(self) -> None:
         body = self.operation.request_body
@@ -263,10 +263,10 @@ class _OperationPlanner:
         if _UNSUPPORTED_CONTENT_TYPE in accepted or any(item in ("*/*", "text/*") for item in accepted):
             return
         expected = ["415"] if "415" in self.codes else []
-        self._add("content_type", f"Enviar body com Content-Type não aceito ({_UNSUPPORTED_CONTENT_TYPE}).",
+        self._add("content_type", f"Send the body with an unaccepted Content-Type ({_UNSUPPORTED_CONTENT_TYPE}).",
                   {"use": "valid_request", "content_type": _UNSUPPORTED_CONTENT_TYPE}, expected,
                   Basis.DOCUMENTED if expected else Basis.HYPOTHESIS, body.pointer,
-                  [] if expected else ["415 não documentado; status esperado é hipótese. Aceitos: "
+                  [] if expected else ["415 not documented; expected status is a hypothesis. Accepted: "
                                        + ", ".join(accepted) + "."])
 
     def _documented_response_scenarios(self) -> None:
@@ -274,11 +274,11 @@ class _OperationPlanner:
         for response in self.operation.responses:
             if response.status_code in covered or response.status_code.startswith("2"):
                 continue
-            description = response.description or "sem descrição"
-            self._add("documented_response", f"Provocar a resposta documentada {response.status_code}: {description}.",
-                      {"use": "valid_request", "trigger": "condição não especificada no contrato"},
+            description = response.description or "no description"
+            self._add("documented_response", f"Trigger the documented response {response.status_code}: {description}.",
+                      {"use": "valid_request", "trigger": "condition not specified in the contract"},
                       [response.status_code], Basis.DOCUMENTED, response.pointer,
-                      ["A resposta está documentada, mas a condição que a provoca deve ser definida pelo usuário."])
+                      ["The response is documented, but the condition that triggers it must be defined by the user."])
 
 
 # ------------------------------------------------------------------ helpers
@@ -299,16 +299,16 @@ def _invalid_values(schema: dict[str, Any]) -> list[tuple[str, str, Any]]:
     cases: list[tuple[str, str, Any]] = []
     schema_type, _ = normalized_type(schema)
     if isinstance(schema_type, str) and schema_type in _WRONG_TYPE_VALUES:
-        cases.append(("invalid_type", f"tipo inválido (esperado {schema_type})", _WRONG_TYPE_VALUES[schema_type]))
+        cases.append(("invalid_type", f"invalid type (expected {schema_type})", _WRONG_TYPE_VALUES[schema_type]))
     schema_format = schema.get("format")
     if schema_type == "string" and schema_format in _INVALID_FORMATS:
-        cases.append(("invalid_format", f"formato inválido (esperado {schema_format})", _INVALID_FORMATS[schema_format]))
+        cases.append(("invalid_format", f"invalid format (expected {schema_format})", _INVALID_FORMATS[schema_format]))
     if isinstance(schema.get("enum"), list) and schema["enum"]:
-        cases.append(("invalid_enum", "valor fora do enum declarado", "__valor_fora_do_enum__"))
+        cases.append(("invalid_enum", "value outside the declared enum", "__value_outside_enum__"))
     cases.extend(_numeric_bounds(schema))
     cases.extend(_length_bounds(schema))
     if isinstance(schema.get("pattern"), str):
-        cases.append(("invalid_pattern", f"valor que não atende ao pattern {schema['pattern']}", "!!!"))
+        cases.append(("invalid_pattern", f"value that does not match the pattern {schema['pattern']}", "!!!"))
     return cases
 
 
@@ -318,15 +318,15 @@ def _numeric_bounds(schema: dict[str, Any]) -> list[tuple[str, str, Any]]:
     minimum, maximum = schema.get("minimum"), schema.get("maximum")
     exclusive_min, exclusive_max = schema.get("exclusiveMinimum"), schema.get("exclusiveMaximum")
     if _is_number(exclusive_min):
-        cases.append(("out_of_range", f"valor igual ao exclusiveMinimum {exclusive_min}", exclusive_min))
+        cases.append(("out_of_range", f"value equal to exclusiveMinimum {exclusive_min}", exclusive_min))
     elif _is_number(minimum):
         value = minimum if exclusive_min is True else minimum - step
-        cases.append(("out_of_range", f"valor abaixo do mínimo {minimum}", value))
+        cases.append(("out_of_range", f"value below the minimum {minimum}", value))
     if _is_number(exclusive_max):
-        cases.append(("out_of_range", f"valor igual ao exclusiveMaximum {exclusive_max}", exclusive_max))
+        cases.append(("out_of_range", f"value equal to exclusiveMaximum {exclusive_max}", exclusive_max))
     elif _is_number(maximum):
         value = maximum if exclusive_max is True else maximum + step
-        cases.append(("out_of_range", f"valor acima do máximo {maximum}", value))
+        cases.append(("out_of_range", f"value above the maximum {maximum}", value))
     return cases
 
 
@@ -334,25 +334,25 @@ def _length_bounds(schema: dict[str, Any]) -> list[tuple[str, str, Any]]:
     cases = []
     if schema.get("type") == "array":
         if isinstance(schema.get("minItems"), int) and schema["minItems"] > 0:
-            cases.append(("length", f"lista com menos de {schema['minItems']} itens", []))
+            cases.append(("length", f"list with fewer than {schema['minItems']} items", []))
         if isinstance(schema.get("maxItems"), int):
             size = schema["maxItems"] + 1
             value = [f"<item {index}>" for index in range(size)] if size <= MAX_INLINE_TEST_VALUE_SIZE else \
-                f"<lista com {size} itens>"
-            cases.append(("length", f"lista com mais de {schema['maxItems']} itens", value))
+                f"<list with {size} items>"
+            cases.append(("length", f"list with more than {schema['maxItems']} items", value))
         return cases
     if isinstance(schema.get("minLength"), int) and schema["minLength"] > 0:
-        cases.append(("length", f"texto com menos de {schema['minLength']} caracteres",
+        cases.append(("length", f"text shorter than {schema['minLength']} characters",
                       _text_of_length(schema["minLength"] - 1)))
     if isinstance(schema.get("maxLength"), int):
-        cases.append(("length", f"texto com mais de {schema['maxLength']} caracteres",
+        cases.append(("length", f"text longer than {schema['maxLength']} characters",
                       _text_of_length(schema["maxLength"] + 1)))
     return cases
 
 
 def _text_of_length(size: int) -> str:
     """Texto literal quando curto; placeholder descritivo quando longo (economiza tokens)."""
-    return "x" * size if size <= MAX_INLINE_TEST_VALUE_SIZE else f"<texto com {size} caracteres>"
+    return "x" * size if size <= MAX_INLINE_TEST_VALUE_SIZE else f"<text with {size} characters>"
 
 
 def _is_number(value: Any) -> bool:

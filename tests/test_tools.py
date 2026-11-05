@@ -39,7 +39,7 @@ def users():
 
 def test_tools_require_loaded_spec():
     result = listar_endpoints()
-    assert result == {"status": "error", "error": "Nenhuma especificação carregada."}
+    assert result == {"status": "error", "error": "No specification loaded."}
 
 
 def test_load_reports_overview(users):
@@ -52,10 +52,10 @@ def test_load_reports_overview(users):
 @pytest.mark.parametrize(
     ("path", "message"),
     [
-        ("../../AGENTS.md", "Acesso negado"),
-        ("../conftest.py", "Acesso negado"),
-        ("nao_existe.yaml", "não encontrado"),
-        ("invalid_syntax.yaml", "YAML inválido"),
+        ("../../AGENTS.md", "Access denied"),
+        ("../conftest.py", "Access denied"),
+        ("nao_existe.yaml", "not found"),
+        ("invalid_syntax.yaml", "Invalid YAML"),
     ],
 )
 def test_load_errors_are_structured(path, message):
@@ -66,7 +66,7 @@ def test_load_errors_are_structured(path, message):
 def test_load_rejects_unsupported_extension(tmp_path, monkeypatch):
     monkeypatch.setenv("VERIQ_SPEC_DIR", str(tmp_path))
     (tmp_path / "spec.txt").write_text("openapi: 3.0.0", encoding="utf-8")
-    assert "Extensão" in carregar_especificacao("spec.txt")["error"]
+    assert "Unsupported extension" in carregar_especificacao("spec.txt")["error"]
 
 
 def test_specification_queries(users):
@@ -95,7 +95,7 @@ def test_security_tools(users):
     assert health["source"] == "operation_empty_override"
     single = analisar_autenticacao("createUser")
     assert single["security"]["status"] == "declared_required"
-    assert "não foi verificado" in single["disclaimer"]
+    assert "was not verified" in single["disclaimer"]
     gaps = listar_lacunas_autenticacao()
     assert {gap["code"] for gap in gaps["gaps"]} == {"auth_errors_not_documented"}
 

@@ -44,7 +44,7 @@ class SpecStore:
             wanted = spec_id or self._active_id
             if wanted is None or wanted not in self._specs:
                 raise SpecNotLoadedError(
-                    "Nenhuma especificação carregada." if wanted is None else f"Especificação '{wanted}' não encontrada."
+                    "No specification loaded." if wanted is None else f"Specification '{wanted}' not found."
                 )
             return self._specs[wanted]
 

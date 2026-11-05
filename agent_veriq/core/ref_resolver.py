@@ -22,7 +22,7 @@ class RefResolutionError(Exception):
     """Referência que não pôde ser resolvida com segurança."""
 
     def __init__(self, ref: str, reason: str) -> None:
-        super().__init__(f"Não foi possível resolver '{ref}': {reason}")
+        super().__init__(f"Could not resolve '{ref}': {reason}")
         self.ref = ref
         self.reason = reason
 
@@ -55,7 +55,7 @@ class RefResolver:
         if pointer in ("", "#"):
             return self._document
         if not pointer.startswith("/"):
-            raise RefResolutionError(pointer, "JSON Pointer deve começar com '/'")
+            raise RefResolutionError(pointer, "JSON Pointer must start with '/'")
         current: Any = self._document
         for raw_token in pointer[1:].split("/"):
             token = unquote(raw_token).replace("~1", "/").replace("~0", "~")
@@ -64,7 +64,7 @@ class RefResolver:
             elif isinstance(current, list) and token.isdigit() and int(token) < len(current):
                 current = current[int(token)]
             else:
-                raise RefResolutionError(pointer, f"o caminho '{token}' não existe no documento")
+                raise RefResolutionError(pointer, f"path '{token}' does not exist in the document")
         return current
 
     def deref(self, node: Any, pointer: str = "") -> Resolved:
@@ -77,11 +77,11 @@ class RefResolver:
         while isinstance(current, dict) and isinstance(current.get("$ref"), str):
             ref = current["$ref"]
             if is_external_ref(ref):
-                raise RefResolutionError(ref, "referência externa não é acessada automaticamente")
+                raise RefResolutionError(ref, "external references are not fetched automatically")
             if ref in chain:
-                raise RefResolutionError(ref, "referência circular")
+                raise RefResolutionError(ref, "circular reference")
             if len(chain) >= MAX_REF_HOPS:
-                raise RefResolutionError(ref, f"cadeia com mais de {MAX_REF_HOPS} referências")
+                raise RefResolutionError(ref, f"chain of more than {MAX_REF_HOPS} references")
             chain.append(ref)
             current_pointer = ref[1:]
             current = self.resolve_pointer(current_pointer)

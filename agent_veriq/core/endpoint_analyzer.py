@@ -61,7 +61,7 @@ def get_operation(spec: ApiSpec, identifier: str) -> Operation:
     operation = spec.find_operation(identifier)
     if operation is None:
         raise OperationNotFoundError(
-            f"Operação '{identifier}' não encontrada. Use o operationId ou o formato 'METHOD /path'."
+            f"Operation '{identifier}' not found. Use the operationId or the 'METHOD /path' format."
         )
     return operation
 
@@ -95,7 +95,7 @@ def operation_details(spec: ApiSpec, identifier: str, *,
     issues = operation_issues(spec, operation)
     if issues:
         details["issues"] = issues
-    details["examples_note"] = "Exemplos listados são os documentados na especificação."
+    details["examples_note"] = "Listed examples are the ones documented in the specification."
     return details
 
 
@@ -103,24 +103,24 @@ def missing_information(operation: Operation) -> list[str]:
     """Lacunas do contrato que limitam explicação, testes ou geração de collection."""
     gaps = []
     if not operation.summary and not operation.description:
-        gaps.append("Operação sem summary ou description.")
+        gaps.append("Operation has no summary or description.")
     if not operation.responses:
-        gaps.append("Nenhuma resposta documentada.")
+        gaps.append("No documented responses.")
     elif not any(response.status_code.startswith("2") for response in operation.responses):
-        gaps.append("Nenhuma resposta de sucesso (2xx) documentada.")
+        gaps.append("No documented success (2xx) response.")
     elif not any(response.status_code[:1] in ("4", "5") for response in operation.responses):
-        gaps.append("Nenhuma resposta de erro (4xx/5xx) documentada.")
+        gaps.append("No documented error (4xx/5xx) response.")
     for parameter in operation.parameters:
         if parameter.schema is None:
-            gaps.append(f"Parâmetro '{parameter.name}' ({parameter.location}) sem schema.")
+            gaps.append(f"Parameter '{parameter.name}' ({parameter.location}) has no schema.")
     body = operation.request_body
     if body is not None:
         if not body.content:
-            gaps.append("Request body sem content type declarado.")
+            gaps.append("Request body has no declared content type.")
         elif all(media.schema is None for media in body.content):
-            gaps.append("Request body sem schema.")
+            gaps.append("Request body has no schema.")
         elif not any(media.has_example or media.examples for media in body.content):
-            gaps.append("Request body sem exemplo documentado.")
+            gaps.append("Request body has no documented example.")
     return gaps
 
 
@@ -202,6 +202,6 @@ def _add_examples(data: dict[str, Any], example: Any, has_example: bool, example
     if not documented:
         return
     value, omitted = compact_value(documented, limit=MAX_DOCUMENTED_EXAMPLES_CHARS)
-    data["documented_examples"] = value if not omitted else "omitido por tamanho; consulte o ponteiro de origem"
+    data["documented_examples"] = value if not omitted else "omitted due to size; see the source pointer"
     if len(examples) > MAX_EXAMPLES_PER_MEDIA:
         data["documented_examples_omitted"] = len(examples) - MAX_EXAMPLES_PER_MEDIA

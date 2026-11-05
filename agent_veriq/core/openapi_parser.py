@@ -63,11 +63,11 @@ class _SpecParser:
     def parse(self) -> ApiSpec:
         info = self.doc.get("info")
         if not isinstance(info, dict):
-            self._issue("missing_info", "Objeto 'info' ausente ou inválido.", Severity.ERROR, "/info")
+            self._issue("missing_info", "'info' object missing or invalid.", Severity.ERROR, "/info")
             info = {}
         for required in ("title", "version"):
             if required not in info:
-                self._issue("missing_info_field", f"Campo 'info.{required}' ausente.", Severity.WARNING, "/info")
+                self._issue("missing_info_field", f"Field 'info.{required}' is missing.", Severity.WARNING, "/info")
 
         spec = ApiSpec(
             version=self.version,
@@ -112,7 +112,7 @@ class _SpecParser:
         if "servers" not in self.doc:
             self._issue(
                 "default_server",
-                "Nenhum 'servers' declarado; pela especificação o padrão é '/' (URL relativa).",
+                "No 'servers' declared; per the specification the default is '/' (relative URL).",
                 Severity.INFO,
                 "/servers",
             )
@@ -121,7 +121,7 @@ class _SpecParser:
 
     def _parse_servers(self, value: Any, pointer: str) -> list[Server]:
         if not isinstance(value, list):
-            self._issue("invalid_servers", "'servers' deve ser uma lista.", Severity.WARNING, pointer)
+            self._issue("invalid_servers", "'servers' must be a list.", Severity.WARNING, pointer)
             return []
         servers = []
         for index, item in enumerate(value):
@@ -129,7 +129,7 @@ class _SpecParser:
                 variables = item.get("variables") if isinstance(item.get("variables"), dict) else {}
                 servers.append(Server(item["url"], _as_str(item.get("description")), variables))
             else:
-                self._issue("invalid_server", "Servidor sem 'url' válida.", Severity.WARNING,
+                self._issue("invalid_server", "Server without a valid 'url'.", Severity.WARNING,
                             join_pointer(pointer, index))
         return servers
 
@@ -139,7 +139,7 @@ class _SpecParser:
         if not host:
             self._issue(
                 "missing_host",
-                "'host' não declarado; a URL-base é relativa ao local onde a especificação é servida.",
+                "'host' not declared; the base URL is relative to where the specification is served.",
                 Severity.INFO,
                 "/host",
             )
@@ -148,7 +148,7 @@ class _SpecParser:
             self.doc.get("schemes"), list
         ) else []
         if not schemes:
-            self._issue("missing_schemes", "'schemes' não declarado; protocolo da URL-base indefinido.",
+            self._issue("missing_schemes", "'schemes' not declared; the base URL protocol is undefined.",
                         Severity.WARNING, "/schemes")
             return [Server(url=f"{host}{base_path}")]
         return [Server(url=f"{scheme}://{host}{base_path}") for scheme in schemes]
@@ -171,7 +171,7 @@ class _SpecParser:
                 continue
             value, value_pointer = resolved
             if not isinstance(value, dict) or not isinstance(value.get("type"), str):
-                self._issue("invalid_security_scheme", f"Esquema de segurança '{name}' sem 'type' válido.",
+                self._issue("invalid_security_scheme", f"Security scheme '{name}' has no valid 'type'.",
                             Severity.WARNING, item_pointer)
                 continue
             schemes[name] = self._build_v2_scheme(name, value, value_pointer) if self.is_v2 else \
@@ -199,7 +199,7 @@ class _SpecParser:
         elif kind == "oauth2":
             flow = _SWAGGER2_OAUTH_FLOWS.get(str(value.get("flow")))
             if flow is None:
-                self._issue("invalid_oauth_flow", f"Fluxo OAuth2 desconhecido em '{name}'.", Severity.WARNING, pointer)
+                self._issue("invalid_oauth_flow", f"Unknown OAuth2 flow in '{name}'.", Severity.WARNING, pointer)
             else:
                 details = {key: value[key] for key in ("authorizationUrl", "tokenUrl") if key in value}
                 details["scopes"] = value.get("scopes") if isinstance(value.get("scopes"), dict) else {}
@@ -208,18 +208,18 @@ class _SpecParser:
 
     def _parse_security(self, value: Any, pointer: str) -> SecurityRequirements | None:
         if not isinstance(value, list):
-            self._issue("invalid_security", "'security' deve ser uma lista de requisitos.", Severity.ERROR, pointer)
+            self._issue("invalid_security", "'security' must be a list of requirements.", Severity.ERROR, pointer)
             return None
         requirements: SecurityRequirements = []
         for index, item in enumerate(value):
             item_pointer = join_pointer(pointer, index)
             if not isinstance(item, dict):
-                self._issue("invalid_security", "Requisito de segurança deve ser um objeto.", Severity.ERROR, item_pointer)
+                self._issue("invalid_security", "A security requirement must be an object.", Severity.ERROR, item_pointer)
                 continue
             requirement: dict[str, list[str]] = {}
             for name, scopes in item.items():
                 if not isinstance(scopes, list):
-                    self._issue("invalid_security", f"Scopes de '{name}' devem ser uma lista.", Severity.ERROR,
+                    self._issue("invalid_security", f"Scopes of '{name}' must be a list.", Severity.ERROR,
                                 join_pointer(item_pointer, name))
                     scopes = []
                 requirement[name] = [str(scope) for scope in scopes]
@@ -244,15 +244,15 @@ class _SpecParser:
         paths = self.doc.get("paths")
         if paths is None:
             if self.version is SpecVersion.OPENAPI_3_1:
-                self._issue("no_paths", "A especificação não declara 'paths'.", Severity.INFO, "/paths")
+                self._issue("no_paths", "The specification declares no 'paths'.", Severity.INFO, "/paths")
             else:
-                self._issue("missing_paths", "Campo obrigatório 'paths' ausente.", Severity.ERROR, "/paths")
+                self._issue("missing_paths", "Required field 'paths' is missing.", Severity.ERROR, "/paths")
             return []
         if not isinstance(paths, dict):
-            self._issue("invalid_paths", "'paths' deve ser um objeto.", Severity.ERROR, "/paths")
+            self._issue("invalid_paths", "'paths' must be an object.", Severity.ERROR, "/paths")
             return []
         if self.version is SpecVersion.OPENAPI_3_1 and isinstance(self.doc.get("webhooks"), dict):
-            self._issue("webhooks_ignored", "Webhooks declarados não são analisados como endpoints.",
+            self._issue("webhooks_ignored", "Declared webhooks are not analysed as endpoints.",
                         Severity.INFO, "/webhooks")
 
         operations: list[Operation] = []
@@ -261,13 +261,13 @@ class _SpecParser:
                 continue
             item_pointer = join_pointer("/paths", path)
             if not path.startswith("/"):
-                self._issue("invalid_path", f"Path '{path}' deve começar com '/'.", Severity.WARNING, item_pointer)
+                self._issue("invalid_path", f"Path '{path}' must start with '/'.", Severity.WARNING, item_pointer)
             resolved = self._deref(raw_item, item_pointer)
             if resolved is None:
                 continue
             path_item, path_item_pointer = resolved
             if not isinstance(path_item, dict):
-                self._issue("invalid_path_item", f"Path '{path}' não é um objeto.", Severity.ERROR, item_pointer)
+                self._issue("invalid_path_item", f"Path '{path}' is not an object.", Severity.ERROR, item_pointer)
                 continue
             operations.extend(self._parse_path_item(path, path_item, path_item_pointer))
         return operations
@@ -283,7 +283,7 @@ class _SpecParser:
             op_pointer = join_pointer(pointer, method)
             raw = item[method]
             if not isinstance(raw, dict):
-                self._issue("invalid_operation", f"Operação {method.upper()} {path} não é um objeto.",
+                self._issue("invalid_operation", f"Operation {method.upper()} {path} is not an object.",
                             Severity.ERROR, op_pointer)
                 continue
             operations.append(self._parse_operation(path, method, raw, op_pointer, shared_params, pointer, path_servers))
@@ -337,7 +337,7 @@ class _SpecParser:
         merged: dict[tuple[str, str], tuple[dict[str, Any], str]] = {}
         for values, base_pointer in ((shared, shared_pointer), (own, own_pointer)):
             if not isinstance(values, list):
-                self._issue("invalid_parameters", "'parameters' deve ser uma lista.", Severity.WARNING, base_pointer)
+                self._issue("invalid_parameters", "'parameters' must be a list.", Severity.WARNING, base_pointer)
                 continue
             for index, raw in enumerate(values):
                 entry_pointer = join_pointer(base_pointer, index)
@@ -348,7 +348,7 @@ class _SpecParser:
                 if not isinstance(value, dict) or not isinstance(value.get("name"), str) or not isinstance(
                     value.get("in"), str
                 ):
-                    self._issue("invalid_parameter", "Parâmetro sem 'name' ou 'in' válidos.", Severity.WARNING,
+                    self._issue("invalid_parameter", "Parameter without a valid 'name' or 'in'.", Severity.WARNING,
                                 entry_pointer)
                     continue
                 name = value["name"].lower() if value["in"] == "header" else value["name"]
@@ -358,7 +358,7 @@ class _SpecParser:
     def _parse_v3_parameter(self, value: dict[str, Any], pointer: str) -> Parameter | None:
         location = value["in"]
         if location not in PARAMETER_LOCATIONS:
-            self._issue("invalid_parameter_location", f"Localização de parâmetro inválida: '{location}'.",
+            self._issue("invalid_parameter_location", f"Invalid parameter location: '{location}'.",
                         Severity.WARNING, pointer)
             return None
         schema = value.get("schema") if isinstance(value.get("schema"), dict) else None
@@ -400,7 +400,7 @@ class _SpecParser:
                 )
                 parameters.append(parameter)
             else:
-                self._issue("invalid_parameter_location", f"Localização de parâmetro inválida: '{location}'.",
+                self._issue("invalid_parameter_location", f"Invalid parameter location: '{location}'.",
                             Severity.WARNING, value_pointer)
         consumes = self._v2_media_types(raw, "consumes")
         if body is not None:
@@ -413,7 +413,7 @@ class _SpecParser:
         value, value_pointer = body
         if not consumes:
             self._issue("assumed_content_type",
-                        "'consumes' não declarado; tipo de conteúdo do body assumido como application/json.",
+                        "'consumes' not declared; body content type assumed to be application/json.",
                         Severity.INFO, join_pointer(op_pointer, "consumes"))
             consumes = ["application/json"]
         schema = value.get("schema") if isinstance(value.get("schema"), dict) else None
@@ -437,7 +437,7 @@ class _SpecParser:
             has_file = any(value.get("type") == "file" for value, _ in fields)
             media_types = ["multipart/form-data" if has_file else "application/x-www-form-urlencoded"]
             self._issue("assumed_content_type",
-                        f"Tipo de conteúdo do formulário assumido como {media_types[0]}.",
+                        f"Form content type assumed to be {media_types[0]}.",
                         Severity.INFO, join_pointer(op_pointer, "consumes"))
         return RequestBody(
             required=bool(required),
@@ -452,7 +452,7 @@ class _SpecParser:
     def _required_flag(self, value: dict[str, Any], location: str, pointer: str) -> bool:
         if location == "path" and value.get("required") is not True:
             self._issue("path_parameter_not_required",
-                        f"Parâmetro de path '{value['name']}' deveria declarar required: true.",
+                        f"Path parameter '{value['name']}' should declare required: true.",
                         Severity.WARNING, pointer)
             return True
         return value.get("required") is True
@@ -462,7 +462,7 @@ class _SpecParser:
         for name in _PATH_TEMPLATE.findall(operation.path):
             if name not in declared:
                 self._issue("undeclared_path_parameter",
-                            f"Variável '{{{name}}}' do path não possui parâmetro declarado em {operation.key}.",
+                            f"Path variable '{{{name}}}' has no declared parameter in {operation.key}.",
                             Severity.WARNING, operation.pointer)
 
     # ------------------------------------------------- request/response body
@@ -473,11 +473,11 @@ class _SpecParser:
             return None
         value, value_pointer = resolved
         if not isinstance(value, dict):
-            self._issue("invalid_request_body", "'requestBody' deve ser um objeto.", Severity.ERROR, pointer)
+            self._issue("invalid_request_body", "'requestBody' must be an object.", Severity.ERROR, pointer)
             return None
         content = self._parse_content(value.get("content"), join_pointer(value_pointer, "content"))
         if not content:
-            self._issue("missing_request_content", "'requestBody' sem 'content' declarado.", Severity.WARNING,
+            self._issue("missing_request_content", "'requestBody' has no declared 'content'.", Severity.WARNING,
                         value_pointer)
         return RequestBody(
             required=value.get("required") is True,
@@ -505,7 +505,7 @@ class _SpecParser:
         pointer = join_pointer(op_pointer, "responses")
         value = raw.get("responses")
         if not isinstance(value, dict) or not value:
-            self._issue("missing_responses", "Operação sem respostas documentadas.", Severity.WARNING, pointer)
+            self._issue("missing_responses", "Operation has no documented responses.", Severity.WARNING, pointer)
             return []
         produces = self._v2_media_types(raw, "produces") if self.is_v2 else []
         responses = []
@@ -518,14 +518,14 @@ class _SpecParser:
                 continue
             response, response_pointer = resolved
             if not isinstance(response, dict):
-                self._issue("invalid_response", f"Resposta '{status}' não é um objeto.", Severity.ERROR, item_pointer)
+                self._issue("invalid_response", f"Response '{status}' is not an object.", Severity.ERROR, item_pointer)
                 continue
             responses.append(self._build_response(status, response, response_pointer, produces))
         return responses
 
     def _build_response(self, status: str, value: dict[str, Any], pointer: str, produces: list[str]) -> Response:
         if "description" not in value:
-            self._issue("missing_response_description", f"Resposta '{status}' sem 'description'.",
+            self._issue("missing_response_description", f"Response '{status}' has no 'description'.",
                         Severity.INFO, pointer)
         headers = value.get("headers") if isinstance(value.get("headers"), dict) else {}
         response = Response(status_code=status, pointer=pointer, description=_as_str(value.get("description")),
@@ -552,8 +552,8 @@ class _SpecParser:
                 continue
             if operation.operation_id in seen:
                 self._issue("duplicate_operation_id",
-                            f"operationId '{operation.operation_id}' repetido em {seen[operation.operation_id].key} "
-                            f"e {operation.key}.", Severity.WARNING, operation.pointer)
+                            f"operationId '{operation.operation_id}' is repeated in {seen[operation.operation_id].key} "
+                            f"and {operation.key}.", Severity.WARNING, operation.pointer)
             else:
                 seen[operation.operation_id] = operation
 
@@ -564,10 +564,10 @@ class _SpecParser:
             if reference.resolved or parent in reported:
                 continue
             if reference.external:
-                self._issue("external_ref", f"Referência externa '{reference.ref}' não foi acessada.",
+                self._issue("external_ref", f"External reference '{reference.ref}' was not fetched.",
                             Severity.WARNING, reference.pointer)
             else:
-                self._issue("broken_ref", f"Referência interna '{reference.ref}' não existe no documento.",
+                self._issue("broken_ref", f"Internal reference '{reference.ref}' does not exist in the document.",
                             Severity.ERROR, reference.pointer)
 
 
