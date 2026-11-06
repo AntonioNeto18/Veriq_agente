@@ -56,7 +56,7 @@ def test_scope_by_operation_ids_tag_and_auth(load_fixture):
     by_tag = generate_collection(spec, tag="users")
     assert [folder["name"] for folder in by_tag["item"]] == ["users"]
     assert collection_summary(by_tag)["requests"] == 4
-    with pytest.raises(CollectionGenerationError, match="Nenhuma operação"):
+    with pytest.raises(CollectionGenerationError, match="No operation"):
         generate_collection(spec, tag="inexistente")
 
 
@@ -81,14 +81,14 @@ def test_json_body_and_success_assertions(load_fixture):
     script = _script(create)
     assert "oneOf([201])" in script
     assert '["name", "email", "id"]' in script
-    assert "sugeridos pelo agente" in create["request"]["description"]
+    assert "suggested by veriq" in create["request"]["description"]
 
 
 def test_no_status_assertion_without_documented_success(load_fixture):
     collection = generate_collection(load_fixture("incomplete.yaml"))
     create = _request(collection, "POST /orders")
     assert "pm.expect" not in _script(create)
-    assert "Nenhuma resposta 2xx documentada" in _script(create)
+    assert "No documented 2xx response" in _script(create)
 
 
 def test_swagger2_multipart_and_query_api_key(load_fixture):
@@ -124,9 +124,9 @@ def test_auth_mapping_for_mixed_security(load_fixture):
     assert {"key": "Cookie", "value": "session={{apiKeyCookieApiKey}}"} in cookie["header"]
 
     unknown = _request(collection, "/unknown")["request"]
-    assert "auth" not in unknown and "indeterminada" in unknown["description"]
+    assert "auth" not in unknown and "indeterminate" in unknown["description"]
     alternatives = _request(collection, "/alternatives")["request"]
-    assert "Alternativas de autenticação declaradas não aplicadas: oauth" in alternatives["description"]
+    assert "Declared authentication alternatives not applied: oauth" in alternatives["description"]
 
 
 @pytest.mark.parametrize("name", ALL_FIXTURES)
@@ -141,7 +141,7 @@ def test_scenarios_folder_and_assertions(load_fixture):
     collection = generate_collection(load_fixture("users_v3_0.yaml"), operation_ids=["createUser"],
                                      options=CollectionOptions(include_scenarios=True))
     folder = collection["item"][0]["item"][1]
-    assert folder["name"] == "Cenários: Cadastra um usuário"
+    assert folder["name"] == "Scenarios: Cadastra um usuário"
     scenarios = {item["name"].split("]")[0][1:]: item for item in folder["item"]}
 
     no_auth = scenarios["createUser-02"]
@@ -154,9 +154,9 @@ def test_scenarios_folder_and_assertions(load_fixture):
     missing_name = scenarios["createUser-05"]
     assert "name" not in json.loads(missing_name["request"]["body"]["raw"])
 
-    hypothesis = next(item for item in folder["item"] if "Content-Type não aceito" in item["name"])
+    hypothesis = next(item for item in folder["item"] if "unaccepted Content-Type" in item["name"])
     assert "pm.test.skip" in _script(hypothesis) and "pm.expect" not in _script(hypothesis)
-    assert hypothesis["request"]["body"]["raw"] == "texto simples"
+    assert hypothesis["request"]["body"]["raw"] == "plain text"
 
 
 def test_validator_rejects_literal_credentials_and_bad_structure():
@@ -166,7 +166,7 @@ def test_validator_rejects_literal_credentials_and_bad_structure():
                                            "auth": {"type": "bearer", "bearer": [{"key": "token",
                                                                                   "value": "eyJreal"}]}}}],
     }
-    assert any("credencial 'token'" in error for error in validate_collection(collection))
+    assert any("credential 'token'" in error for error in validate_collection(collection))
     assert validate_collection({"info": {"name": "x"}, "item": []})
 
 

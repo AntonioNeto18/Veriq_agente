@@ -28,7 +28,7 @@ def test_plan_structure_and_ids(users):
     for scenario in plan["scenarios"]:
         assert {"id", "category", "description", "inputs", "expected", "basis", "source"} <= set(scenario)
         assert scenario["basis"] in ("documented", "hypothesis")
-    assert any("nenhum foi executado" in note for note in plan["notes"])
+    assert any("none was executed" in note for note in plan["notes"])
 
 
 def test_valid_request_marks_value_origin(users):
@@ -43,9 +43,9 @@ def test_body_scenarios_come_from_contract(users):
     grouped = _by_category(plan_operation_tests(users, "createUser"))
     removed = {s["inputs"].get("body_remove") for s in grouped["missing_required"]}
     assert {"name", "email"} <= removed
-    assert grouped["invalid_format"][0]["inputs"]["body_set"] == {"email": "email-invalido"}
+    assert grouped["invalid_format"][0]["inputs"]["body_set"] == {"email": "invalid-email"}
     lengths = [s["inputs"]["body_set"]["name"] for s in grouped["length"]]
-    assert lengths == ["", "<texto com 81 caracteres>"]
+    assert lengths == ["", "<text with 81 characters>"]
     assert all(s["expected"]["status"] == ["400"] and s["basis"] == "documented" for s in grouped["length"])
 
 
@@ -60,7 +60,7 @@ def test_undocumented_status_is_hypothesis(users):
     grouped = _by_category(plan_operation_tests(users, "createUser"))
     (content_type,) = grouped["content_type"]
     assert content_type["basis"] == "hypothesis"
-    assert content_type["expected"]["status"] == "não documentado"
+    assert content_type["expected"]["status"] == "not documented"
 
     get_user = _by_category(plan_operation_tests(users, "getUser"))
     assert all(s["basis"] == "hypothesis" for s in get_user["authentication"])
@@ -93,7 +93,7 @@ paths:
     (conflict,) = grouped["documented_response"]
     assert conflict["expected"]["status"] == ["409"]
     assert "item duplicado" in conflict["description"]
-    assert conflict["inputs"]["trigger"] == "condição não especificada no contrato"
+    assert conflict["inputs"]["trigger"] == "condition not specified in the contract"
 
 
 def test_security_scopes_and_indeterminate(load_fixture):
@@ -102,7 +102,7 @@ def test_security_scopes_and_indeterminate(load_fixture):
     assert alternatives["authorization"][0]["basis"] == "hypothesis"
     unknown = plan_operation_tests(spec, "unknownOp")
     assert "authentication" not in _by_category(unknown)
-    assert any("indeterminada" in note for note in unknown["notes"])
+    assert any("indeterminate" in note.lower() for note in unknown["notes"])
 
 
 def test_swagger2_form_and_parameters(load_fixture):
@@ -133,7 +133,7 @@ paths:
         '201': {description: ok}
 """))
     (length,) = _by_category(plan_operation_tests(spec, "createNote"))["length"]
-    assert length["inputs"]["body_set"]["text"] == "<texto com 5001 caracteres>"
+    assert length["inputs"]["body_set"]["text"] == "<text with 5001 characters>"
 
 
 def test_max_scenarios_and_multiple_operations(users):

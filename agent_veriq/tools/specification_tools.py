@@ -76,7 +76,7 @@ def obter_schema(nome: str, profundidade: int = TOOL_DEFAULT_SCHEMA_DEPTH) -> di
     def action() -> dict[str, Any]:
         spec = active_spec()
         if nome not in spec.schema_names:
-            raise ValueError(f"Schema '{nome}' não encontrado. Use listar_schemas para ver os nomes disponíveis.")
+            raise ValueError(f"Schema '{nome}' not found. Use listar_schemas to see the available names.")
         pointer = spec.schema_names[nome]
         depth = min(max(profundidade, 1), SCHEMA_SUMMARY_MAX_DEPTH_LIMIT)
         summarizer = SchemaSummarizer(RefResolver(spec.document), max_depth=depth)
@@ -113,9 +113,9 @@ def _resolve_spec_path(caminho: str) -> Path:
     candidate = Path(caminho)
     path = (candidate if candidate.is_absolute() else base / candidate).resolve()
     if not path.is_relative_to(base):
-        raise PermissionError(f"Acesso negado: o arquivo deve estar dentro de {base}.")
+        raise PermissionError(f"Access denied: the file must be inside {base}.")
     if path.suffix.lower() not in ALLOWED_SPEC_SUFFIXES:
-        raise ValueError(f"Extensão não suportada; use {', '.join(ALLOWED_SPEC_SUFFIXES)}.")
+        raise ValueError(f"Unsupported extension; use {', '.join(ALLOWED_SPEC_SUFFIXES)}.")
     return path
 
 

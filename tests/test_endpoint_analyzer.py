@@ -58,7 +58,7 @@ def test_details_of_create_user(spec):
     created = next(r for r in details["responses"] if r["status"] == "201")
     assert created["content"][0]["documented_examples"]["example"]["name"] == "Ana"
     assert details["security"]["status"] == "declared_required"
-    assert "Request body sem exemplo documentado." in details["missing_information"]
+    assert "Request body has no documented example." in details["missing_information"]
 
 
 def test_details_merge_all_of(spec):
@@ -71,7 +71,7 @@ def test_details_merge_all_of(spec):
 
 
 def test_details_unknown_operation(spec):
-    with pytest.raises(OperationNotFoundError, match="não encontrada"):
+    with pytest.raises(OperationNotFoundError, match="not found"):
         operation_details(spec, "GET /nope")
 
 
@@ -85,7 +85,7 @@ def test_details_report_issues_and_external_refs(load_fixture):
     assert details["security"]["status"] == "indeterminate"
 
     create = spec.find_operation("createOrder")
-    assert "Nenhuma resposta documentada." in missing_information(create)
+    assert "No documented responses." in missing_information(create)
 
 
 def test_details_circular_schema_is_marked(load_fixture):
